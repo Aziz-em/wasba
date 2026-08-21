@@ -10,6 +10,13 @@ dotnet run
 ```
 API: http://localhost:5000 — Swagger: /swagger
 
+### تشغيل أوفلاين من رابط واحد
+بعد تثبيت Node.js و.NET مرة واحدة، شغّل من جذر المشروع:
+```bash
+./run-offline.sh
+```
+ثم افتح `http://localhost:5000`. هذه النسخة تعمل محليًا بدون GitHub أو إنترنت بعد تثبيت الاعتماديات، وتستخدم قاعدة `kidsarea.db` المحلية. الرابط يعمل على نفس الجهاز فقط، وليس من جهاز آخر.
+
 ### Frontend
 ```bash
 cd frontend

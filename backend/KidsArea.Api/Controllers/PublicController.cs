@@ -23,5 +23,26 @@ public class PublicController : ControllerBase
             homeBackgroundPath = s.HomeBackgroundPath,
             iconTheme = s.IconTheme
         });
-    }
+        }
+[HttpGet("image")]
+public IActionResult Image([FromQuery] string path, [FromServices] IWebHostEnvironment env)
+{
+    if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("/uploads/"))
+        return NotFound();
+
+    var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+    var full = Path.Combine(webRoot, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+    if (!System.IO.File.Exists(full)) return NotFound();
+
+    var ext = Path.GetExtension(full).ToLowerInvariant();
+    var contentType = ext switch
+    {
+        ".png" => "image/png",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".webp" => "image/webp",
+        ".gif" => "image/gif",
+        _ => "application/octet-stream"
+    };
+    return PhysicalFile(full, contentType);
 }
+    }

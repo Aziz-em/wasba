@@ -3,6 +3,7 @@ import { Box, Typography, Paper, TextField, Button, Alert } from '@mui/material'
 import api from '../api/client'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
+import { localDate, localDateTime } from '../utils/time'
 
 export default function CloseShiftPage() {
   const [treasury, setTreasury] = useState<any>(null)
@@ -16,7 +17,7 @@ export default function CloseShiftPage() {
     try {
       const r = await api.post('/Shifts/close', { actualCash: actual, emergencyNotes: notes })
       setReport(r.data)
-      toast.success('تم إقفال الوردية')
+      toast.success('تم غلق الوردية')
       printReport(r.data)
     } catch (e: any) { toast.error(e.response?.data?.message || 'فشل') }
   }
@@ -25,14 +26,14 @@ export default function CloseShiftPage() {
     const w = window.open('', '_blank')
     if (!w) return
     const s = d.summary
-    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>تقرير إقفال</title>
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>تقرير غلق</title>
       <style>body{font-family:Tahoma;padding:24px;max-width:800px;margin:auto}h1,h2{margin:8px 0}
       table{width:100%;border-collapse:collapse;margin:8px 0}td,th{border:1px solid #ccc;padding:6px;text-align:right}
       .sec{margin-top:16px}</style></head><body>
       <h1>${d.centerName}</h1>
       <div>${d.centerPhone || ''}</div>
-      <h2>تقرير إقفال يومي — ${new Date(d.businessDate).toLocaleDateString('ar-EG')}</h2>
-      <div>الكاشير: ${d.cashierName} | فتح: ${new Date(d.openedAt).toLocaleString('ar-EG')} | إقفال: ${new Date(d.closedAt).toLocaleString('ar-EG')}</div>
+      <h2>تقرير غلق يومي — ${localDate(d.businessDate)}</h2>
+      <div>الكاشير: ${d.cashierName} | فتح: ${localDateTime(d.openedAt)} | غلق: ${localDateTime(d.closedAt)}</div>
       <div class="sec"><h3>1) ملخص الإيراد</h3>
       <table><tr><td>نقدي</td><td>${s.cashTotal}</td></tr>
       <tr><td>InstaPay</td><td>${s.instaPayTotal}</td></tr>
@@ -46,10 +47,7 @@ export default function CloseShiftPage() {
       <div>رسوم المرافقين: ${d.companionsTotal} | التجاوز: ${d.overageTotal}</div></div>
       <div class="sec"><h3>5) الحفلات</h3><table>
       ${(d.parties||[]).map((x:any)=>`<tr><td>${x.label}</td><td>${x.amount}</td></tr>`).join('')}</table></div>
-      <div class="sec"><h3>6) العضويات</h3><table>
-      ${(d.memberships||[]).map((x:any)=>`<tr><td>${x.label}</td><td>${x.amount}</td></tr>`).join('')}</table>
-      <div>ساعات عضوية مستخدمة: ${d.membershipHoursUsed}</div></div>
-      <div class="sec"><h3>7) الدرج النقدي</h3>
+      <div class="sec"><h3>6) الدرج النقدي</h3>
       <table>
       <tr><td>افتتاحي</td><td>${d.openingBalance}</td></tr>
       <tr><td>متوقع</td><td>${d.expectedCash}</td></tr>
@@ -62,18 +60,20 @@ export default function CloseShiftPage() {
   }
 
   if (report) {
-    return (
-      <Box>
-        <Alert severity="success" sx={{ mb: 2 }}>تم إقفال الوردية</Alert>
-        <Button variant="contained" onClick={() => printReport(report)}>طباعة / حفظ PDF للتقرير</Button>
-        <Button sx={{ ml: 1 }} onClick={() => nav('/reports')}>الأرشيف</Button>
-      </Box>
-    )
-  }
+  return (
+    <Box>
+      <Alert severity="success" sx={{ mb: 2 }}>تم غلق الوردية</Alert>
+      <Button variant="contained" onClick={() => printReport(report)}>طباعة التقرير</Button>
+      <Button sx={{ ml: 1 }} onClick={() => nav('/reports')}>الأرشيف</Button>
+      <Button sx={{ ml: 1 }} onClick={() => nav('/customers')}>العملاء</Button>
+      <Button sx={{ ml: 1 }} onClick={() => nav('/settings')}>الإعدادات</Button>
+    </Box>
+  )
+}
 
   return (
     <Box maxWidth={480}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>إقفال الوردية</Typography>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>غلق الوردية</Typography>
       <Paper sx={{ p: 2 }}>
         {treasury && (
           <Alert severity="info" sx={{ mb: 2 }}>
@@ -83,7 +83,7 @@ export default function CloseShiftPage() {
         )}
         <TextField fullWidth type="number" label="النقد الفعلي بعد العدّ" value={actual} onChange={e => setActual(+e.target.value)} sx={{ mb: 2 }} />
         <TextField fullWidth multiline rows={3} label="ملاحظات طوارئ / أحداث اليوم" value={notes} onChange={e => setNotes(e.target.value)} sx={{ mb: 2 }} />
-        <Button fullWidth variant="contained" color="error" size="large" onClick={close}>إقفال وإصدار التقرير</Button>
+        <Button fullWidth variant="contained" color="error" size="large" onClick={close}>غلق وإصدار التقرير</Button>
       </Paper>
     </Box>
   )

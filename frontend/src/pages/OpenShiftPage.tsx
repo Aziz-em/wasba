@@ -23,6 +23,9 @@ export default function OpenShiftPage() {
         <TextField fullWidth type="number" label="الرصيد الافتتاحي (ج.م)" value={bal} onChange={e => setBal(+e.target.value)} sx={{ mb: 2 }} />
         <TextField fullWidth label="ملاحظة" value={notes} onChange={e => setNotes(e.target.value)} sx={{ mb: 2 }} />
         <Button fullWidth variant="contained" size="large" onClick={open}>فتح الوردية</Button>
+      <Button fullWidth sx={{ mt: 2 }} onClick={() => nav('/reports')}>عرض التقارير بدون فتح وردية</Button>
+<Button fullWidth sx={{ mt: 1 }} onClick={() => nav('/customers')}>العملاء</Button>
+<Button fullWidth sx={{ mt: 1 }} onClick={() => nav('/settings')}>الإعدادات</Button>
       </Paper>
     </Box>
   )

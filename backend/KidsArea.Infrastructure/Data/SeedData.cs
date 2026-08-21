@@ -11,6 +11,12 @@ public static class SeedData
         using var scope = sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();
+        await EnsureVisitSiblingColumnsAsync(db);
+        await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_Customers_Phone ON Customers (Phone)");
+        await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_Visits_CheckInTime ON Visits (CheckInTime)");
+        await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_Visits_CustomerId ON Visits (CustomerId)");
+        await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_CashShifts_ClosedAt ON CashShifts (ClosedAt)");
+        await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_PartySales_SaleTime ON PartySales (SaleTime)");
         if (await db.Users.AnyAsync()) return;
 
         db.Users.Add(new AppUser
@@ -56,5 +62,11 @@ public static class SeedData
         );
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task EnsureVisitSiblingColumnsAsync(AppDbContext db)
+    {
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN SiblingNames TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN SiblingAges TEXT"); } catch { }
     }
 }

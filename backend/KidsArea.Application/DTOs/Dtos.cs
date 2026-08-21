@@ -21,8 +21,11 @@ public record CheckInDto(
     decimal PaidInstaPay,
     decimal PaidOther,
     string? InstaPayReference,
-    string? Notes
+    string? Notes,
+    List<SiblingInputDto>? Siblings
 );
+
+public record SiblingInputDto(string Name, int Age);
 
 public record CheckInResultDto(
     int VisitId,
@@ -44,7 +47,11 @@ public record ActiveVisitDto(
     int CompanionsCount,
     int SiblingsCount,
     double ElapsedMinutes,
-    decimal TotalAmount
+    decimal TotalAmount,
+    DateTime? ExpectedCheckOutTime,
+    List<string> ChildrenNames,
+    List<int> ChildrenAges,
+    int ChildrenCount
 );
 
 public record CheckOutDto(
@@ -59,6 +66,7 @@ public record CheckOutPreviewDto(
     int VisitId,
     string ReceiptNumber,
     string ChildName,
+    string Phone,
     DateTime CheckInTime,
     DateTime? ExpectedCheckOutTime,
     string PackageName,
@@ -66,7 +74,8 @@ public record CheckOutPreviewDto(
     int OverageHours,
     decimal OverageAmount,
     decimal AlreadyPaid,
-    decimal TotalDueNow
+    decimal TotalDueNow,
+    List<string> ChildrenNames
 );
 
 public record CheckOutResultDto(
@@ -77,8 +86,10 @@ public record CheckOutResultDto(
     bool PrintExitReceipt
 );
 
-public record CustomerDto(int Id, string Phone, string Name, int ChildrenCount);
+public record CustomerDto(int Id, string Phone, string Name, int ChildrenCount, List<string> ChildrenNames, int VisitsCount, DateTime? LastVisit, string? Notes);
 public record CreateCustomerDto(string Phone, string Name);
+public record UpdateCustomerNotesDto(string? Notes);
+public record CustomerPageDto(List<CustomerDto> Items, int Page, int PageSize, int Total, int TotalPages);
 public record ChildDto(int Id, string Name, int Age);
 
 public record MembershipTypeDto(int Id, string Name, string Kind, int DurationDays, int? HoursBalance, decimal Price, bool IsActive);

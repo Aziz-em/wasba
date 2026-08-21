@@ -8,7 +8,6 @@ import CheckInPage from './pages/CheckInPage'
 import ActivePage from './pages/ActivePage'
 import CheckOutPage from './pages/CheckOutPage'
 import CustomersPage from './pages/CustomersPage'
-import MembershipsPage from './pages/MembershipsPage'
 import PartyPage from './pages/PartyPage'
 import TreasuryPage from './pages/TreasuryPage'
 import CloseShiftPage from './pages/CloseShiftPage'
@@ -32,7 +31,6 @@ export default function App() {
         <Route path="active" element={<ActivePage />} />
         <Route path="checkout" element={<CheckOutPage />} />
         <Route path="customers" element={<CustomersPage />} />
-        <Route path="memberships" element={<MembershipsPage />} />
         <Route path="party" element={<PartyPage />} />
         <Route path="treasury" element={<TreasuryPage />} />
         <Route path="close-shift" element={<CloseShiftPage />} />

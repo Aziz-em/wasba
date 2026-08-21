@@ -1,0 +1,12 @@
+/workspaces/wasba/backend/KidsArea.Domain/bin/Debug/net8.0/KidsArea.Domain.deps.json
+/workspaces/wasba/backend/KidsArea.Domain/bin/Debug/net8.0/KidsArea.Domain.dll
+/workspaces/wasba/backend/KidsArea.Domain/bin/Debug/net8.0/KidsArea.Domain.pdb
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.AssemblyInfoInputs.cache
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.AssemblyInfo.cs
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.csproj.CoreCompileInputs.cache
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.sourcelink.json
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.dll
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/refint/KidsArea.Domain.dll
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/KidsArea.Domain.pdb
+/workspaces/wasba/backend/KidsArea.Domain/obj/Debug/net8.0/ref/KidsArea.Domain.dll

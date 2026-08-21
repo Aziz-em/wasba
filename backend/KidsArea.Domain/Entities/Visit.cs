@@ -9,6 +9,8 @@ public class Visit : BaseEntity
     public Child? Child { get; set; }
     public string ChildName { get; set; } = "";
     public int ChildAge { get; set; }
+    public string? SiblingNames { get; set; }
+    public string? SiblingAges { get; set; }
     public int CompanionsCount { get; set; }
     public int ExtraCompanionsCount { get; set; } // beyond 2 free
     public PricingMode PricingMode { get; set; }

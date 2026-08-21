@@ -25,4 +25,18 @@ public class SettingsController : ControllerBase
         await _s.AddPaymentMethodAsync(dto.Name, dto.Code);
         return Ok(new { message = "تمت الإضافة" });
     }
+        [HttpPost("users/{id:int}/toggle")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> ToggleUser(int id)
+    {
+        try
+        {
+            await _s.ToggleUserAsync(id);
+            return Ok(new { message = "تم" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { Box, Typography, Paper, TextField, Button, List, ListItemButton, ListItemText, Alert, Grid } from '@mui/material'
 import api from '../api/client'
 import { toast } from 'react-toastify'
+import { mediaUrl } from '../utils/media'
+import { localDateTime } from '../utils/time'
 
 export default function CheckOutPage() {
   const [params] = useSearchParams()
@@ -12,9 +14,10 @@ export default function CheckOutPage() {
   const [paidCash, setPaidCash] = useState(0)
   const [paidInsta, setPaidInsta] = useState(0)
   const [instaRef, setInstaRef] = useState('')
+  const [settings, setSettings] = useState<any>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { inputRef.current?.focus() }, [])
+  useEffect(() => { inputRef.current?.focus(); api.get('/Settings').then(r => setSettings(r.data)).catch(() => {}) }, [])
   useEffect(() => {
     if (params.get('r')) selectReceipt(params.get('r')!)
   }, [])
@@ -45,6 +48,12 @@ export default function CheckOutPage() {
 
   const confirm = async () => {
     if (!preview) return
+    const receiptWindow = window.open('', '_blank', 'width=320,height=520')
+    if (!receiptWindow) {
+      toast.error('تعذر فتح نافذة الإيصال. اسمح بالنوافذ المنبثقة ثم أعد المحاولة')
+      return
+    }
+    receiptWindow.document.write('<html dir="rtl"><body style="font-family:Tahoma;text-align:center;padding:24px">جاري تجهيز الإيصال...</body></html>')
     try {
       const r = await api.post('/Visits/checkout', {
         receiptNumber: preview.receiptNumber,
@@ -52,20 +61,21 @@ export default function CheckOutPage() {
       })
       toast.success(r.data.overageAmount > 0 ? `تم الخروج — تجاوز ${r.data.overageAmount} ج.م` : 'تم الخروج')
       if (r.data.printExitReceipt) {
-        // simple exit receipt
-        const w = window.open('', '_blank', 'width=320,height=480')
-        if (w) {
-          w.document.write(`<html dir="rtl"><body style="font-family:Tahoma;width:280px"><h3 style="text-align:center">إيصال خروج — تجاوز</h3>
-            <div>الإيصال: ${preview.receiptNumber}</div>
-            <div>الطفل: ${preview.childName}</div>
-            <div>ساعات التجاوز: ${preview.overageHours}</div>
-            <div><b>المبلغ: ${r.data.overageAmount} ج.م</b></div>
-            <script>setTimeout(()=>print(),300)<\/script></body></html>`)
-          w.document.close()
-        }
+        const logo = settings?.logoPath ? `<div style="text-align:center"><img src="${mediaUrl(settings.logoPath)}" style="max-height:64px;max-width:160px"/></div>` : ''
+        const children = (preview.childrenNames || [preview.childName]).map((name: string) => `<div>الطفل: ${name}</div>`).join('')
+        receiptWindow.document.write(`<html dir="rtl"><head><title>إيصال خروج</title><style>body{font-family:Tahoma;width:280px;margin:8px auto;font-size:13px}h3,h4{text-align:center}.line{border-top:1px dashed #333;margin:8px 0}</style></head><body>
+          ${logo}<h3>${settings?.centerName || 'Kids Area'}</h3><div style="text-align:center">${settings?.centerPhone || ''}</div><div class="line"></div>
+          <h4>إيصال خروج</h4><div>الإيصال: <b>${preview.receiptNumber}</b></div>${children}
+          <div>رقم الهاتف: ${preview.phone || ''}</div><div>وقت الدخول: ${localDateTime(preview.checkInTime)}</div>
+          <div>وقت الخروج: ${new Date().toLocaleString('ar-EG')}</div><div>الباقة: ${preview.packageName}</div><div>ساعات التجاوز: ${preview.overageHours}</div>
+          <div class="line"></div><div><b>الإجمالي: ${r.data.totalPaid} ج.م</b></div><div>مبلغ التجاوز: ${r.data.overageAmount} ج.م</div>
+          <script>setTimeout(()=>print(),300)<\/script></body></html>`)
+        receiptWindow.document.close()
+      } else {
+        receiptWindow.close()
       }
       setPreview(null); setQ(''); setPaidCash(0); setPaidInsta(0)
-    } catch (e: any) { toast.error(e.response?.data?.message || 'فشل') }
+    } catch (e: any) { receiptWindow.close(); toast.error(e.response?.data?.message || 'فشل') }
   }
 
   return (
@@ -89,7 +99,7 @@ export default function CheckOutPage() {
       {preview && (
         <Paper sx={{ p: 2, maxWidth: 520 }}>
           <Typography>الطفل: <b>{preview.childName}</b></Typography>
-          <Typography>الدخول: {new Date(preview.checkInTime).toLocaleString('ar-EG')}</Typography>
+          <Typography>الدخول: {localDateTime(preview.checkInTime)}</Typography>
           <Typography>الباقة: {preview.packageName}</Typography>
           {preview.isFullDay ? (
             <Alert severity="info" sx={{ my: 1 }}>يوم كامل — لا رسوم تجاوز</Alert>

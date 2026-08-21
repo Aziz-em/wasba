@@ -20,6 +20,10 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder mb)
     {
         mb.Entity<Customer>().HasIndex(x => x.Phone);
+        mb.Entity<Visit>().HasIndex(x => x.CheckInTime);
+        mb.Entity<Visit>().HasIndex(x => x.CustomerId);
+        mb.Entity<CashShift>().HasIndex(x => x.ClosedAt);
+        mb.Entity<PartySale>().HasIndex(x => x.SaleTime);
         mb.Entity<Visit>().HasIndex(x => x.ReceiptNumber).IsUnique();
         mb.Entity<AppUser>().HasIndex(x => x.Username).IsUnique();
         mb.Entity<Customer>().HasMany(c => c.Children).WithOne(ch => ch.Customer).HasForeignKey(ch => ch.CustomerId);

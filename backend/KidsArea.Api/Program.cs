@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using KidsArea.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite("Data Source=kidsarea.db"));
@@ -16,6 +17,8 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<MembershipAppService>();
 builder.Services.AddScoped<PartyService>();
 builder.Services.AddScoped<CustomerService>();
+builder.Services.AddSingleton<BackupService>();
+builder.Services.AddHostedService<AutomaticBackupService>();
 
 var key = builder.Configuration["Jwt:Key"] ?? "KidsAreaAppSecretKey_MustBe32CharsMin_X!";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -53,4 +56,5 @@ app.UseStaticFiles(); // serve /uploads/*
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 app.Run();

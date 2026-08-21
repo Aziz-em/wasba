@@ -4,6 +4,7 @@ using KidsArea.Domain.Enums;
 using KidsArea.Domain.Interfaces;
 using KidsArea.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace KidsArea.Application.Services;
 
@@ -30,7 +31,7 @@ public class VisitService
 
     public async Task<CheckInResultDto> CheckInAsync(CheckInDto dto, int cashierId)
     {
-        if (string.IsNullOrWhiteSpace(dto.Phone)) throw new InvalidOperationException("رقم الجوال إلزامي");
+        if (string.IsNullOrWhiteSpace(dto.Phone)) throw new InvalidOperationException("رقم الهاتف إلزامي");
         if (string.IsNullOrWhiteSpace(dto.ChildName)) throw new InvalidOperationException("اسم الطفل إلزامي");
         if (dto.ChildAge < 1) throw new InvalidOperationException("عمر الطفل إلزامي");
 
@@ -42,7 +43,9 @@ public class VisitService
         var customer = await _db.Customers.Include(c => c.Children).FirstOrDefaultAsync(c => c.Phone == phone && !c.IsDeleted);
         if (customer == null)
         {
-            customer = new Customer { Phone = phone, Name = string.IsNullOrWhiteSpace(dto.CustomerName) ? phone : dto.CustomerName.Trim() };
+            var nameParts = dto.ChildName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var derivedCustomerName = nameParts.Length > 1 ? nameParts[1] : nameParts[0];
+            customer = new Customer { Phone = phone, Name = string.IsNullOrWhiteSpace(dto.CustomerName) ? derivedCustomerName : dto.CustomerName.Trim() };
             _db.Customers.Add(customer);
             await _db.SaveChangesAsync();
         }
@@ -125,6 +128,8 @@ public class VisitService
             ChildId = child.Id,
             ChildName = child.Name,
             ChildAge = child.Age,
+            SiblingNames = dto.Siblings == null ? null : JsonSerializer.Serialize(dto.Siblings.Select(x => x.Name).ToList()),
+            SiblingAges = dto.Siblings == null ? null : JsonSerializer.Serialize(dto.Siblings.Select(x => x.Age).ToList()),
             CompanionsCount = dto.CompanionsCount,
             ExtraCompanionsCount = extraCompanions,
             PricingMode = mode,
@@ -159,11 +164,12 @@ public class VisitService
     {
         var list = await _db.Visits.Include(v => v.Customer)
             .Where(v => v.Status == VisitStatus.Active && !v.IsDeleted)
-            .OrderByDescending(v => v.CheckInTime).ToListAsync();
+            .OrderBy(v => v.ExpectedCheckOutTime ?? DateTime.MaxValue).ThenBy(v => v.CheckInTime).ToListAsync();
         return list.Select(v => new ActiveVisitDto(
             v.Id, v.ReceiptNumber, v.ChildName, v.ChildAge, v.Customer.Phone,
             v.CheckInTime, PackageName(v.Package), v.CompanionsCount, v.SiblingsCount,
-            (DateTime.UtcNow - v.CheckInTime).TotalMinutes, v.TotalAmount
+            (DateTime.UtcNow - v.CheckInTime).TotalMinutes, v.TotalAmount, v.ExpectedCheckOutTime,
+            ChildNames(v), ChildAges(v), ChildNames(v).Count
         )).ToList();
     }
 
@@ -177,8 +183,26 @@ public class VisitService
         return list.Select(v => new ActiveVisitDto(
             v.Id, v.ReceiptNumber, v.ChildName, v.ChildAge, v.Customer.Phone,
             v.CheckInTime, PackageName(v.Package), v.CompanionsCount, v.SiblingsCount,
-            (DateTime.UtcNow - v.CheckInTime).TotalMinutes, v.TotalAmount
+            (DateTime.UtcNow - v.CheckInTime).TotalMinutes, v.TotalAmount, v.ExpectedCheckOutTime,
+            ChildNames(v), ChildAges(v), ChildNames(v).Count
         )).ToList();
+    }
+
+    private static List<string> ChildNames(Visit visit)
+    {
+        var names = new List<string> { visit.ChildName };
+        if (!string.IsNullOrWhiteSpace(visit.SiblingNames))
+            names.AddRange(JsonSerializer.Deserialize<List<string>>(visit.SiblingNames) ?? new List<string>());
+        return names;
+    }
+
+    private static List<int> ChildAges(Visit visit)
+    {
+        var ages = new List<int> { visit.ChildAge };
+        if (!string.IsNullOrWhiteSpace(visit.SiblingAges))
+            ages.AddRange(JsonSerializer.Deserialize<List<int>>(visit.SiblingAges) ?? new List<int>());
+        while (ages.Count < ChildNames(visit).Count) ages.Add(0);
+        return ages;
     }
 
     public async Task<CheckOutPreviewDto> PreviewCheckOutAsync(string receipt)
@@ -193,9 +217,9 @@ public class VisitService
         var (hours, amount) = _pricing.CalculateOverage(settings, siblingPrices, visit, now);
 
         return new CheckOutPreviewDto(
-            visit.Id, visit.ReceiptNumber, visit.ChildName, visit.CheckInTime, visit.ExpectedCheckOutTime,
+            visit.Id, visit.ReceiptNumber, visit.ChildName, visit.Customer.Phone, visit.CheckInTime, visit.ExpectedCheckOutTime,
             PackageName(visit.Package), visit.Package == DurationPackage.FullDay,
-            hours, amount, visit.TotalAmount, amount
+            hours, amount, visit.TotalAmount, amount, ChildNames(visit)
         );
     }
 

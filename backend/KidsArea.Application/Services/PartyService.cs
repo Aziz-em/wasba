@@ -30,4 +30,20 @@ public class PartyService
 
     public async Task<List<PartySale>> TodayAsync(int shiftId) =>
         await _db.PartySales.Where(p => p.ShiftId == shiftId && !p.IsDeleted).OrderByDescending(p => p.SaleTime).ToListAsync();
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var party = await _db.PartySales.FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+        if (party == null) return false;
+        party.IsDeleted = true;
+        party.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<PartySale>> CurrentAsync(int cashierId)
+    {
+        var shift = await _db.CashShifts.FirstOrDefaultAsync(s => s.CashierId == cashierId && s.Status == ShiftStatus.Open && !s.IsDeleted);
+        return shift == null ? new List<PartySale>() : await TodayAsync(shift.Id);
+    }
 }

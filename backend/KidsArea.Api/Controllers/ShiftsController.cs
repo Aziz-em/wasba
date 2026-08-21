@@ -40,8 +40,14 @@ public class ShiftsController : ControllerBase
     }
 
     [HttpGet("closed")]
-    public async Task<IActionResult> Closed() => Ok(await _s.ClosedShiftsAsync());
+    public async Task<IActionResult> Closed([FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 25) {
+        var result = await _s.ClosedShiftsAsync(from, to, page, pageSize);
+        return Ok(new { items = result.Items, total = result.Total, page = result.Page, pageSize = result.PageSize, totalPages = (int)Math.Ceiling(result.Total / (double)result.PageSize) });
+    }
 
     [HttpGet("report/{shiftId:int}")]
     public async Task<IActionResult> Report(int shiftId) => Ok(await _s.ReportForShiftAsync(shiftId));
+
+    [HttpDelete("{shiftId:int}")][Authorize(Roles = "Owner")]
+    public async Task<IActionResult> DeleteReport(int shiftId) => await _s.DeleteAsync(shiftId) ? NoContent() : NotFound();
 }

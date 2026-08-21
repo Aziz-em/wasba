@@ -67,4 +67,14 @@ public class SettingsService
         _db.PaymentMethods.Add(new PaymentMethodDef { Name = name, Code = code, IsActive = true, SortOrder = max + 1 });
         await _db.SaveChangesAsync();
     }
+        public async Task ToggleUserAsync(int id)
+    {
+        var u = await _db.Users.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted)
+            ?? throw new InvalidOperationException("المستخدم غير موجود");
+        if (u.Username == "owner")
+            throw new InvalidOperationException("لا يمكن تعطيل حساب المالك الأساسي");
+        u.IsActive = !u.IsActive;
+        u.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+    }
 }

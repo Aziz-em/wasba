@@ -4,20 +4,18 @@ import api from '../api/client'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
+import { localDateTime } from '../utils/time'
 
 export default function CheckInPage() {
   const nav = useNavigate()
   const [settings, setSettings] = useState<any>(null)
   const [phone, setPhone] = useState('')
-  const [customerName, setCustomerName] = useState('')
   const [childName, setChildName] = useState('')
   const [childAge, setChildAge] = useState(5)
   const [companions, setCompanions] = useState(0)
   const [siblings, setSiblings] = useState(0)
+  const [siblingDetails, setSiblingDetails] = useState<{ name: string; age: number }[]>([])
   const [pkg, setPkg] = useState(1)
-  const [useMem, setUseMem] = useState(false)
-  const [membershipId, setMembershipId] = useState<number | null>(null)
-  const [memberships, setMemberships] = useState<any[]>([])
   const [useFlex, setUseFlex] = useState(false)
   const [paidCash, setPaidCash] = useState(0)
   const [paidInsta, setPaidInsta] = useState(0)
@@ -30,24 +28,18 @@ export default function CheckInPage() {
     if (phone.length < 3) return
     try {
       const r = await api.get(`/Customers/phone/${phone}`)
-      setCustomerName(r.data.name || '')
-      const mems = await api.get('/Memberships')
-      setMemberships((mems.data || []).filter((m: any) => m.phone === phone && m.isActive))
     } catch {
-      setMemberships([])
     }
   }
 
   const calcPreview = () => {
     if (!settings) return 0
     let packagePrice = 0
-    if (!useMem) {
-      if (siblings >= 2) {
+    if (siblings >= 2) {
         const row = (settings.siblingPrices || []).find((x: any) => x.siblingsCount === siblings && x.durationPackage === pkg)
         packagePrice = row?.price || 0
-      } else {
+    } else {
         packagePrice = pkg === 1 ? settings.price1Hour : pkg === 2 ? settings.price2Hours : pkg === 3 ? settings.price3Hours : settings.priceFullDay
-      }
     }
     const extraComp = Math.max(0, companions - 2) * (settings.extraCompanionPrice || 0)
     const flex = settings.flexibleFieldEnabled && useFlex ? settings.flexibleFieldPrice : 0
@@ -56,14 +48,20 @@ export default function CheckInPage() {
 
   const total = calcPreview()
 
+  const changeSiblings = (count: number) => {
+    setSiblings(count)
+    setSiblingDetails(current => Array.from({ length: Math.max(0, count - 1) }, (_, index) => current[index] || { name: '', age: 5 }))
+  }
+
   const submit = async () => {
     try {
       const body = {
-        phone, customerName, childName, childAge,
+        phone, customerName: '', childName, childAge,
         companionsCount: companions, siblingsCount: siblings, package: pkg,
-        membershipId: useMem ? membershipId : null, useMembership: useMem,
+        membershipId: null, useMembership: false,
         useFlexibleField: useFlex,
-        paidCash, paidInstaPay: paidInsta, paidOther: 0, instaPayReference: instaRef || null, notes: null
+        paidCash, paidInstaPay: paidInsta, paidOther: 0, instaPayReference: instaRef || null, notes: null,
+        siblings: siblingDetails.filter(sibling => sibling.name.trim())
       }
       const r = await api.post('/Visits/checkin', body)
       setResult(r.data)
@@ -77,25 +75,29 @@ export default function CheckInPage() {
     const w = window.open('', '_blank', 'width=320,height=600')
     if (!w) return
     const logoHtml = settings?.logoPath ? `<div style="text-align:center"><img src="${settings.logoPath}" style="max-height:64px;max-width:160px"/></div>` : ''
+    const siblingHtml = siblingDetails.filter(sibling => sibling.name.trim()).map(sibling => `<div>الطفل: ${sibling.name} — العمر: ${sibling.age}</div>`).join('')
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>إيصال</title>
       <style>body{font-family:Tahoma;width:280px;margin:8px auto;font-size:13px}
       h3,h4{margin:4px 0;text-align:center}.line{border-top:1px dashed #333;margin:8px 0}
       .qr{text-align:center;margin-top:10px}</style></head><body>
       ${logoHtml}
-      <h3>${settings?.centerName || 'Kids Area'}</h3>
+           <h3>${settings?.centerName || 'Kids Area'}</h3>
       <div style="text-align:center">${settings?.centerPhone || ''}</div>
       <div class="line"></div>
       <h4>إيصال دخول</h4>
       <div>رقم: <b>${data.receiptNumber}</b></div>
-      <div>الطفل: ${childName} — عمر ${childAge}</div>
-      <div>الجوال: ${phone}</div>
+      <div>الطفل: ${childName} — العمر: ${childAge}</div>
+      ${siblingHtml}
+      <div>رقم الهاتف: ${phone}</div>
       <div>المرافقون: ${companions}</div>
-      <div>الوقت: ${new Date(data.checkInTime).toLocaleString('ar-EG')}</div>
+      <div>وقت الدخول: ${localDateTime(data.checkInTime)}</div>
+      <div>وقت الخروج المتوقع: ${data.expectedCheckOutTime ? localDateTime(data.expectedCheckOutTime) : '—'}</div>
       <div class="line"></div>
       <div>الإجمالي: <b>${data.totalAmount} ج.م</b></div>
       <div>نقدي: ${paidCash} | InstaPay: ${paidInsta}</div>
       <div class="line"></div>
       <div class="qr"><div id="qr"></div><div>${data.receiptNumber}</div></div>
+      <div style="text-align:center;margin-top:10px"><b>شكراً لزيارتكم</b></div>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
       <script>new QRCode(document.getElementById('qr'),{text:'${data.receiptNumber}',width:120,height:120});setTimeout(()=>window.print(),400)<\/script>
       </body></html>`)
@@ -124,15 +126,20 @@ export default function CheckInPage() {
       <Paper sx={{ p: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="جوال ولي الأمر *" value={phone} onChange={e => setPhone(e.target.value)} onBlur={findCustomer} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="اسم العميل" value={customerName} onChange={e => setCustomerName(e.target.value)} />
+            <TextField fullWidth label="رقم هاتف ولي الأمر *" value={phone} onChange={e => setPhone(e.target.value)} onBlur={findCustomer} />
           </Grid>
           <Grid item xs={8}><TextField fullWidth label="اسم الطفل *" value={childName} onChange={e => setChildName(e.target.value)} /></Grid>
           <Grid item xs={4}><TextField fullWidth type="number" label="العمر *" value={childAge} onChange={e => setChildAge(+e.target.value)} inputProps={{ min: 1 }} /></Grid>
           <Grid item xs={6}><TextField fullWidth type="number" label="عدد المرافقين" value={companions} onChange={e => setCompanions(+e.target.value)} inputProps={{ min: 0 }} helperText="أول 2 مجاناً" /></Grid>
-          <Grid item xs={6}><TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings} onChange={e => setSiblings(+e.target.value)} inputProps={{ min: 0 }} helperText="2 فأكثر = تسعير أخوة" /></Grid>
+          <Grid item xs={6}><TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings} onChange={e => changeSiblings(+e.target.value)} inputProps={{ min: 0 }} helperText="2 فأكثر = تسعير أخوة" /></Grid>
+          {siblingDetails.map((sibling, index) => (
+            <Grid item xs={12} key={index}>
+              <Grid container spacing={1}>
+                <Grid item xs={8}><TextField fullWidth label={`اسم الأخ ${index + 2}`} value={sibling.name} onChange={e => setSiblingDetails(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: e.target.value } : item))} /></Grid>
+                <Grid item xs={4}><TextField fullWidth type="number" label="العمر" value={sibling.age} onChange={e => setSiblingDetails(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, age: +e.target.value } : item))} inputProps={{ min: 1 }} /></Grid>
+              </Grid>
+            </Grid>
+          ))}
           <Grid item xs={12}>
             <TextField fullWidth select label="الباقة" value={pkg} onChange={e => setPkg(+e.target.value)}>
               <MenuItem value={1}>ساعة</MenuItem>
@@ -141,16 +148,6 @@ export default function CheckInPage() {
               <MenuItem value={4}>يوم كامل</MenuItem>
             </TextField>
           </Grid>
-          {memberships.length > 0 && (
-            <Grid item xs={12}>
-              <TextField fullWidth select label="عضوية نشطة" value={membershipId ?? ''} onChange={e => { setMembershipId(+e.target.value); setUseMem(true) }}>
-                <MenuItem value="">بدون عضوية</MenuItem>
-                {memberships.map((m: any) => (
-                  <MenuItem key={m.id} value={m.id}>{m.typeName} — متبقي {m.remainingHours}س — حتى {new Date(m.endDate).toLocaleDateString('ar-EG')}</MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-          )}
           {settings?.flexibleFieldEnabled && (
             <Grid item xs={12}>
               <Button variant={useFlex ? 'contained' : 'outlined'} onClick={() => setUseFlex(!useFlex)}>

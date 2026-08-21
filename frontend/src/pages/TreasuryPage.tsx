@@ -11,7 +11,6 @@ export default function TreasuryPage() {
     ['نقدي', t.cashTotal],
     ['InstaPay', t.instaPayTotal],
     ['زيارات', t.visitsTotal],
-    ['عضويات', t.membershipsTotal],
     ['حفلات', t.partiesTotal],
     ['تجاوزات', t.overageTotal],
     ['مرافقين', t.companionsTotal],
