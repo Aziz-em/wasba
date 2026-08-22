@@ -37,4 +37,10 @@ public class VisitsController : ControllerBase
         try { return Ok(await _s.CheckOutAsync(dto, Uid)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
+        [HttpGet("receipt/{receiptNumber}")]
+    public async Task<IActionResult> Receipt(string receiptNumber)
+    {
+        try { return Ok(await _s.GetReceiptAsync(receiptNumber)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
 }

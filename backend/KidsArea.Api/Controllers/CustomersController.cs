@@ -26,4 +26,22 @@ public class CustomersController : ControllerBase
         var c = await _s.GetByPhoneAsync(phone);
         return c == null ? NotFound() : Ok(c);
     }
+        [HttpGet("export")]
+    [Authorize(Roles = "Owner")]
+    public async Task<IActionResult> Export()
+    {
+        var page = await _s.SearchAsync(null, 1, 100000);
+        var sb = new System.Text.StringBuilder();
+        sb.Append('\uFEFF'); // UTF-8 BOM ليفتح عربي في Excel صح
+        sb.AppendLine("الهاتف,الاسم,أسماء الأطفال,عدد الزيارات,آخر زيارة,ملاحظات");
+        foreach (var c in page.Items)
+        {
+            var children = string.Join(" | ", c.ChildrenNames ?? new List<string>());
+            var last = c.LastVisit?.ToString("yyyy-MM-dd HH:mm") ?? "";
+            var notes = (c.Notes ?? "").Replace("\"", "\"\"");
+            sb.AppendLine($"\"{c.Phone}\",\"{c.Name}\",\"{children}\",{c.VisitsCount},\"{last}\",\"{notes}\"");
+        }
+        var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"customers_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+    }
 }

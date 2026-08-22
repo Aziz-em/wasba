@@ -51,6 +51,20 @@ export default function CustomersPage() {
       toast.success('تم حذف العميل')
     } catch (e: any) { toast.error(e.response?.data?.message || 'فشل حذف العميل') }
   }
+    const exportExcel = async () => {
+    try {
+      const res = await api.get('/Customers/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      toast.success('تم التحميل')
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'فشل التحميل')
+    }
+  }
   return (
     <Box>
       <Typography variant="h5" fontWeight="bold" gutterBottom>العملاء</Typography>
@@ -63,12 +77,26 @@ export default function CustomersPage() {
       </Paper>
       <TextField fullWidth size="small" label="بحث برقم الهاتف أو اسم" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && load()} sx={{ mb: 1 }} />
       <Button size="small" onClick={() => load(1)}>بحث</Button>
+{user?.role === 'Owner' && (
+  <Button size="small" variant="contained" sx={{ mr: 1 }} onClick={exportExcel}>
+    تحميل Excel
+  </Button>
+)}
       <Table size="small" component={Paper} sx={{ mt: 1 }}>
         <TableHead><TableRow><TableCell>رقم الهاتف</TableCell><TableCell>الاسم</TableCell><TableCell>أسماء الأطفال</TableCell><TableCell>عدد الزيارات</TableCell><TableCell>تاريخ آخر زيارة</TableCell><TableCell>ملاحظات</TableCell>{user?.role === 'Owner' && <TableCell>إدارة</TableCell>}</TableRow></TableHead>
         <TableBody>{list.map(c => <TableRow key={c.id}>
           <TableCell>{c.phone}</TableCell>
           <TableCell>{c.name}</TableCell>
-          <TableCell>{(c.childrenNames || []).map((childName: string) => <div key={childName}>{childName}</div>)}</TableCell>
+          <TableCell>
+  {(() => {
+    const firstNames = (c.childrenNames || []).map((n: string) => (n || '').trim().split(/\s+/)[0]).filter(Boolean)
+    const lines: string[] = []
+    for (let i = 0; i < firstNames.length; i += 2) {
+      lines.push(firstNames.slice(i, i + 2).join(' ، '))
+    }
+    return lines.length ? lines.map((line, idx) => <div key={idx}>{line}</div>) : '—'
+  })()}
+</TableCell>
           <TableCell>{c.visitsCount}</TableCell>
           <TableCell>{c.lastVisit ? localDate(c.lastVisit) : 'لا توجد'}</TableCell>
           <TableCell sx={{ minWidth: 260 }}>

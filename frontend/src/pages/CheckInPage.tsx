@@ -12,9 +12,11 @@ export default function CheckInPage() {
   const [phone, setPhone] = useState('')
   const [childName, setChildName] = useState('')
   const [childAge, setChildAge] = useState(5)
+  const [childWristband, setChildWristband] = useState('')
   const [companions, setCompanions] = useState(0)
+  const [companionBands, setCompanionBands] = useState<string[]>([])
   const [siblings, setSiblings] = useState(0)
-  const [siblingDetails, setSiblingDetails] = useState<{ name: string; age: number }[]>([])
+  const [siblingDetails, setSiblingDetails] = useState<{ name: string; age: number; wristband: string }[]>([])
   const [pkg, setPkg] = useState(1)
   const [useFlex, setUseFlex] = useState(false)
   const [paidCash, setPaidCash] = useState(0)
@@ -26,20 +28,17 @@ export default function CheckInPage() {
 
   const findCustomer = async () => {
     if (phone.length < 3) return
-    try {
-      const r = await api.get(`/Customers/phone/${phone}`)
-    } catch {
-    }
+    try { await api.get(`/Customers/phone/${phone}`) } catch { /* تجاهل */ }
   }
 
   const calcPreview = () => {
     if (!settings) return 0
     let packagePrice = 0
     if (siblings >= 2) {
-        const row = (settings.siblingPrices || []).find((x: any) => x.siblingsCount === siblings && x.durationPackage === pkg)
-        packagePrice = row?.price || 0
+      const row = (settings.siblingPrices || []).find((x: any) => x.siblingsCount === siblings && x.durationPackage === pkg)
+      packagePrice = row?.price || 0
     } else {
-        packagePrice = pkg === 1 ? settings.price1Hour : pkg === 2 ? settings.price2Hours : pkg === 3 ? settings.price3Hours : settings.priceFullDay
+      packagePrice = pkg === 1 ? settings.price1Hour : pkg === 2 ? settings.price2Hours : pkg === 3 ? settings.price3Hours : settings.priceFullDay
     }
     const extraComp = Math.max(0, companions - 2) * (settings.extraCompanionPrice || 0)
     const flex = settings.flexibleFieldEnabled && useFlex ? settings.flexibleFieldPrice : 0
@@ -49,58 +48,181 @@ export default function CheckInPage() {
   const total = calcPreview()
 
   const changeSiblings = (count: number) => {
-    setSiblings(count)
-    setSiblingDetails(current => Array.from({ length: Math.max(0, count - 1) }, (_, index) => current[index] || { name: '', age: 5 }))
+  setSiblings(count)
+  setSiblingDetails(current =>
+    Array.from({ length: Math.max(0, count - 1) }, (_, index) =>
+      current[index] || { name: '', age: 5, wristband: '' }
+    )
+  )
+}
+
+  const changeCompanions = (count: number) => {
+    const n = Math.max(0, count)
+    setCompanions(n)
+    setCompanionBands(current => Array.from({ length: n }, (_, i) => current[i] || ''))
   }
 
-  const submit = async () => {
+    const submit = async () => {
     try {
       const body = {
-        phone, customerName: '', childName, childAge,
-        companionsCount: companions, siblingsCount: siblings, package: pkg,
-        membershipId: null, useMembership: false,
+        phone,
+        customerName: '',
+        childName,
+        childAge,
+        childWristband: childWristband || null,
+        companionsCount: companions,
+        companionWristbands: companionBands || [],
+        siblingsCount: siblings,
+        package: pkg,
+        membershipId: null,
+        useMembership: false,
         useFlexibleField: useFlex,
-        paidCash, paidInstaPay: paidInsta, paidOther: 0, instaPayReference: instaRef || null, notes: null,
-        siblings: siblingDetails.filter(sibling => sibling.name.trim())
+        paidCash,
+        paidInstaPay: paidInsta,
+        paidOther: 0,
+        instaPayReference: instaRef || null,
+        notes: null,
+        siblings: siblingDetails
+          .filter(s => s.name.trim())
+          .map(s => ({
+            name: s.name,
+            age: s.age,
+            wristband: s.wristband || null
+          }))
       }
       const r = await api.post('/Visits/checkin', body)
       setResult(r.data)
       toast.success(`تم التسجيل — ${r.data.receiptNumber}`)
-      // print thermal-like window
       printReceipt(r.data)
-    } catch (e: any) { toast.error(e.response?.data?.message || 'فشل') }
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'فشل')
+    }
   }
 
-  const printReceipt = (data: any) => {
-    const w = window.open('', '_blank', 'width=320,height=600')
+   const printReceipt = (data: any) => {
+    const w = window.open('', '_blank', 'width=320,height=720')
     if (!w) return
-    const logoHtml = settings?.logoPath ? `<div style="text-align:center"><img src="${settings.logoPath}" style="max-height:64px;max-width:160px"/></div>` : ''
-    const siblingHtml = siblingDetails.filter(sibling => sibling.name.trim()).map(sibling => `<div>الطفل: ${sibling.name} — العمر: ${sibling.age}</div>`).join('')
+
+    const logoHtml = settings?.logoPath
+      ? `<div style="text-align:center"><img src="${settings.logoPath}" style="max-height:64px;max-width:160px"/></div>`
+      : ''
+
+    // صفوف الأطفال: الأساسي + الأخوة
+    const childrenRows: { name: string; age: number; band: string }[] = [
+      { name: childName, age: childAge, band: childWristband || '—' }
+    ]
+    siblingDetails.filter(s => s.name.trim()).forEach(s => {
+      childrenRows.push({ name: s.name, age: s.age, band: s.wristband || '—' })
+    })
+
+    const childrenTableRows = childrenRows.map(c =>
+      `<tr>
+        <td>${(c.name || '').trim().split(/\s+/)[0] || c.name}</td>
+        <td style="text-align:center">${c.age}</td>
+        <td style="text-align:center">${c.band}</td>
+      </tr>`
+    ).join('')
+
+    // تكلفة المرافقين
+    const extraCompPrice = settings?.extraCompanionPrice || 0
+    const companionsCost = Math.max(0, companions - 2) * extraCompPrice
+    const companionsCostText = companions <= 2 ? 'مجاني' : `${companionsCost} ج.م`
+    const companionBandsText = (companionBands || []).filter(Boolean).join(' ، ') || '—'
+
+    // عدد الساعات والتكلفة (بدون ذكر باقة أخوة)
+    const hoursLabel = pkg === 4 ? 'يوم كامل' : String(pkg === 1 ? 1 : pkg === 2 ? 2 : 3)
+    let packagePrice = 0
+    if (siblings >= 2) {
+      const row = (settings?.siblingPrices || []).find((x: any) => x.siblingsCount === siblings && x.durationPackage === pkg)
+      packagePrice = row?.price || 0
+    } else {
+      packagePrice = pkg === 1 ? settings?.price1Hour : pkg === 2 ? settings?.price2Hours : pkg === 3 ? settings?.price3Hours : settings?.priceFullDay
+    }
+    const flex = settings?.flexibleFieldEnabled && useFlex ? (settings?.flexibleFieldPrice || 0) : 0
+
+    // الدفع: طريقة بجانب المبلغ — بدون تفاصيل التقسيم على الورق
+    let payMethods: string[] = []
+    if (paidCash > 0) payMethods.push('نقدي')
+    if (paidInsta > 0) payMethods.push('InstaPay')
+    const payText = payMethods.length ? payMethods.join(' + ') : '—'
+
+    const inTime = localDateTime(data.checkInTime)
+    const outTime = data.expectedCheckOutTime ? localDateTime(data.expectedCheckOutTime) : '—'
+
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>إيصال</title>
-      <style>body{font-family:Tahoma;width:280px;margin:8px auto;font-size:13px}
-      h3,h4{margin:4px 0;text-align:center}.line{border-top:1px dashed #333;margin:8px 0}
-      .qr{text-align:center;margin-top:10px}</style></head><body>
-      ${logoHtml}
-           <h3>${settings?.centerName || 'Kids Area'}</h3>
-      <div style="text-align:center">${settings?.centerPhone || ''}</div>
-      <div class="line"></div>
-      <h4>إيصال دخول</h4>
-      <div>رقم: <b>${data.receiptNumber}</b></div>
-      <div>الطفل: ${childName} — العمر: ${childAge}</div>
-      ${siblingHtml}
-      <div>رقم الهاتف: ${phone}</div>
-      <div>المرافقون: ${companions}</div>
-      <div>وقت الدخول: ${localDateTime(data.checkInTime)}</div>
-      <div>وقت الخروج المتوقع: ${data.expectedCheckOutTime ? localDateTime(data.expectedCheckOutTime) : '—'}</div>
-      <div class="line"></div>
-      <div>الإجمالي: <b>${data.totalAmount} ج.م</b></div>
-      <div>نقدي: ${paidCash} | InstaPay: ${paidInsta}</div>
-      <div class="line"></div>
-      <div class="qr"><div id="qr"></div><div>${data.receiptNumber}</div></div>
-      <div style="text-align:center;margin-top:10px"><b>شكراً لزيارتكم</b></div>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-      <script>new QRCode(document.getElementById('qr'),{text:'${data.receiptNumber}',width:120,height:120});setTimeout(()=>window.print(),400)<\/script>
-      </body></html>`)
+<style>
+  body{font-family:Tahoma,Arial;width:280px;margin:8px auto;font-size:12px;color:#000}
+  h3,h4{margin:6px 0;text-align:center}
+  .line{border-top:1px dashed #333;margin:10px 0}
+  table{width:100%;border-collapse:collapse;margin:8px 0}
+  th,td{border:1px solid #333;padding:5px 4px;vertical-align:top}
+  th{background:#f0f0f0;font-size:11px}
+  .cost{text-align:left;white-space:nowrap}
+  .time-row{margin:6px 0}
+  .time-val{font-weight:bold;font-size:12px;letter-spacing:0.3px}
+  .out-val{font-weight:bold;font-size:11px;letter-spacing:0.6px}
+  .thanks{text-align:center;margin:14px 0 8px;font-weight:bold}
+  .qr{text-align:center;margin:6px 0 4px}
+  .total{margin:8px 0;font-size:13px}
+</style></head><body>
+  ${logoHtml}
+  <h3>${settings?.centerName || 'Kids Area'}</h3>
+  <div style="text-align:center">${settings?.centerPhone || ''}</div>
+  <div class="line"></div>
+  <h4>إيصال دخول</h4>
+  <div>رقم: <b>${data.receiptNumber}</b></div>
+  <div>الهاتف: ${phone}</div>
+
+  <table>
+    <thead>
+      <tr><th>اسم الطفل</th><th>العمر</th><th>رقم السوار</th></tr>
+    </thead>
+    <tbody>
+      ${childrenTableRows}
+    </tbody>
+  </table>
+
+  <table>
+    <thead>
+      <tr><th>عدد المرافقين</th><th>رقم السوار</th><th>التكلفة</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:center">${companions}</td>
+        <td>${companionBandsText}</td>
+        <td class="cost">${companionsCostText}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table>
+    <thead>
+      <tr><th>عدد الساعات</th><th>التكلفة</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:center">${hoursLabel}</td>
+        <td class="cost">${packagePrice} ج.م</td>
+      </tr>
+      ${flex > 0 ? `<tr><td>${settings?.flexibleFieldLabel || 'إضافة'}</td><td class="cost">${flex} ج.م</td></tr>` : ''}
+    </tbody>
+  </table>
+
+  <div class="time-row">وقت الدخول: <span class="time-val">${inTime}</span></div>
+  <div class="time-row">وقت الخروج: <span class="out-val">${outTime}</span></div>
+
+  <div class="line"></div>
+  <div class="total">الإجمالي: <b>${data.totalAmount} ج.م</b> <span>(${payText})</span></div>
+
+  <div class="thanks">شكراً لزيارتكم</div>
+  <div class="qr"><div id="qr"></div></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+  <script>
+    new QRCode(document.getElementById('qr'),{text:'${data.receiptNumber}',width:120,height:120});
+    setTimeout(function(){ window.print(); }, 400);
+  <\/script>
+</body></html>`)
     w.document.close()
   }
 
@@ -115,7 +237,9 @@ export default function CheckInPage() {
         </Box>
         <Button fullWidth variant="contained" onClick={() => printReceipt(result)}>إعادة طباعة الإيصال</Button>
         <Button fullWidth sx={{ mt: 1 }} onClick={() => { setResult(null); nav('/active') }}>عرض الحاليين</Button>
-        <Button fullWidth sx={{ mt: 1 }} onClick={() => { setResult(null); setChildName(''); setPaidCash(0); setPaidInsta(0) }}>دخول جديد</Button>
+        <Button fullWidth sx={{ mt: 1 }} onClick={() => {
+          setResult(null); setChildName(''); setChildWristband(''); setCompanionBands([]); setCompanions(0); setPaidCash(0); setPaidInsta(0)
+        }}>دخول جديد</Button>
       </Paper>
     )
   }
@@ -128,18 +252,49 @@ export default function CheckInPage() {
           <Grid item xs={12} sm={6}>
             <TextField fullWidth label="رقم هاتف ولي الأمر *" value={phone} onChange={e => setPhone(e.target.value)} onBlur={findCustomer} />
           </Grid>
-          <Grid item xs={8}><TextField fullWidth label="اسم الطفل *" value={childName} onChange={e => setChildName(e.target.value)} /></Grid>
-          <Grid item xs={4}><TextField fullWidth type="number" label="العمر *" value={childAge} onChange={e => setChildAge(+e.target.value)} inputProps={{ min: 1 }} /></Grid>
-          <Grid item xs={6}><TextField fullWidth type="number" label="عدد المرافقين" value={companions} onChange={e => setCompanions(+e.target.value)} inputProps={{ min: 0 }} helperText="أول 2 مجاناً" /></Grid>
-          <Grid item xs={6}><TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings} onChange={e => changeSiblings(+e.target.value)} inputProps={{ min: 0 }} helperText="2 فأكثر = تسعير أخوة" /></Grid>
-          {siblingDetails.map((sibling, index) => (
-            <Grid item xs={12} key={index}>
-              <Grid container spacing={1}>
-                <Grid item xs={8}><TextField fullWidth label={`اسم الأخ ${index + 2}`} value={sibling.name} onChange={e => setSiblingDetails(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: e.target.value } : item))} /></Grid>
-                <Grid item xs={4}><TextField fullWidth type="number" label="العمر" value={sibling.age} onChange={e => setSiblingDetails(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, age: +e.target.value } : item))} inputProps={{ min: 1 }} /></Grid>
-              </Grid>
+          <Grid item xs={8}>
+            <TextField fullWidth label="اسم الطفل *" value={childName} onChange={e => setChildName(e.target.value)} />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField fullWidth type="number" label="العمر *" value={childAge} onChange={e => setChildAge(+e.target.value)} inputProps={{ min: 1 }} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="سوار الطفل *" value={childWristband} onChange={e => setChildWristband(e.target.value)} helperText="رقم السوار المرتبط بهذه الفاتورة" />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth type="number" label="عدد المرافقين" value={companions} onChange={e => changeCompanions(+e.target.value)} inputProps={{ min: 0 }} helperText="أول 2 مجاناً" />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings} onChange={e => changeSiblings(+e.target.value)} inputProps={{ min: 0 }} helperText="2 فأكثر = تسعير أخوة" />
+          </Grid>
+          {companionBands.map((band, index) => (
+            <Grid item xs={6} sm={4} key={index}>
+              <TextField
+                fullWidth
+                label={`سوار مرافق ${index + 1}`}
+                value={band}
+                onChange={e => setCompanionBands(current => current.map((item, i) => i === index ? e.target.value : item))}
+              />
             </Grid>
           ))}
+          {siblingDetails.map((sibling, index) => (
+  <Grid item xs={12} key={index}>
+    <Grid container spacing={1}>
+      <Grid item xs={5}>
+        <TextField fullWidth label={`اسم الأخ ${index + 2}`} value={sibling.name}
+          onChange={e => setSiblingDetails(current => current.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} />
+      </Grid>
+      <Grid item xs={3}>
+        <TextField fullWidth type="number" label="العمر" value={sibling.age}
+          onChange={e => setSiblingDetails(current => current.map((item, i) => i === index ? { ...item, age: +e.target.value } : item))} inputProps={{ min: 1 }} />
+      </Grid>
+      <Grid item xs={4}>
+        <TextField fullWidth label={`سوار الأخ ${index + 2}`} value={sibling.wristband}
+          onChange={e => setSiblingDetails(current => current.map((item, i) => i === index ? { ...item, wristband: e.target.value } : item))} />
+      </Grid>
+    </Grid>
+  </Grid>
+))}
           <Grid item xs={12}>
             <TextField fullWidth select label="الباقة" value={pkg} onChange={e => setPkg(+e.target.value)}>
               <MenuItem value={1}>ساعة</MenuItem>

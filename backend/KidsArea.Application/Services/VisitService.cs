@@ -23,11 +23,13 @@ public class VisitService
         await _db.SystemSettings.FirstAsync(x => x.Id == 1);
 
     private async Task<CashShift> RequireOpenShift(int cashierId)
-    {
-        var shift = await _db.CashShifts.FirstOrDefaultAsync(s => s.CashierId == cashierId && s.Status == ShiftStatus.Open && !s.IsDeleted);
-        if (shift == null) throw new InvalidOperationException("يجب فتح وردية أولاً");
-        return shift;
-    }
+{
+    // وردية واحدة مفتوحة للمحل — لأي مستخدم
+    var shift = await _db.CashShifts.FirstOrDefaultAsync(s =>
+        s.Status == ShiftStatus.Open && !s.IsDeleted);
+    if (shift == null) throw new InvalidOperationException("يجب فتح وردية أولاً");
+    return shift;
+}
 
     public async Task<CheckInResultDto> CheckInAsync(CheckInDto dto, int cashierId)
     {
@@ -131,6 +133,12 @@ public class VisitService
             SiblingNames = dto.Siblings == null ? null : JsonSerializer.Serialize(dto.Siblings.Select(x => x.Name).ToList()),
             SiblingAges = dto.Siblings == null ? null : JsonSerializer.Serialize(dto.Siblings.Select(x => x.Age).ToList()),
             CompanionsCount = dto.CompanionsCount,
+            SiblingWristbands = dto.Siblings == null ? null : JsonSerializer.Serialize(
+    dto.Siblings.Select(x => x.Wristband ?? "").ToList()),
+                        ChildWristband = string.IsNullOrWhiteSpace(dto.ChildWristband) ? null : dto.ChildWristband.Trim(),
+            CompanionWristbands = dto.CompanionWristbands == null || dto.CompanionWristbands.Count == 0
+                ? null
+                : string.Join(",", dto.CompanionWristbands.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim())),
             ExtraCompanionsCount = extraCompanions,
             PricingMode = mode,
             SiblingsCount = siblingsCount,
@@ -275,4 +283,62 @@ public class VisitService
         DurationPackage.FullDay => "يوم كامل",
         _ => p.ToString()
     };
+        public async Task<object> GetReceiptAsync(string receiptNumber)
+    {
+        var visit = await _db.Visits.Include(v => v.Customer)
+            .FirstOrDefaultAsync(v => v.ReceiptNumber == receiptNumber.Trim() && !v.IsDeleted)
+            ?? throw new InvalidOperationException("الإيصال غير موجود");
+
+        var settings = await Settings();
+        var names = ChildNames(visit);
+        var ages = ChildAges(visit);
+        var wristbands = new List<string>();
+        if (!string.IsNullOrWhiteSpace(visit.SiblingWristbands))
+            wristbands = System.Text.Json.JsonSerializer.Deserialize<List<string>>(visit.SiblingWristbands) ?? new List<string>();
+
+        // سوار الطفل الأول + أسورة الأخوة
+        var childBands = new List<string> { visit.ChildWristband ?? "" };
+        childBands.AddRange(wristbands);
+        while (childBands.Count < names.Count) childBands.Add("");
+
+        var hoursLabel = visit.Package switch
+        {
+            DurationPackage.OneHour => "1",
+            DurationPackage.TwoHours => "2",
+            DurationPackage.ThreeHours => "3",
+            DurationPackage.FullDay => "يوم كامل",
+            _ => ""
+        };
+
+        var pay = new List<string>();
+        if (visit.PaidCash > 0) pay.Add("نقدي");
+        if (visit.PaidInstaPay > 0) pay.Add("InstaPay");
+        if (visit.PaidOther > 0) pay.Add("أخرى");
+
+        return new
+        {
+            receiptNumber = visit.ReceiptNumber,
+            phone = visit.Customer.Phone,
+            centerName = settings.CenterName,
+            centerPhone = settings.CenterPhone,
+            logoPath = settings.LogoPath,
+            checkInTime = visit.CheckInTime,
+            checkOutTime = visit.ExpectedCheckOutTime,
+            totalAmount = visit.TotalAmount,
+            packageAmount = visit.PackageAmount,
+            companionsCount = visit.CompanionsCount,
+            companionsAmount = visit.CompanionsAmount,
+            companionWristbands = visit.CompanionWristbands,
+            flexibleLabel = visit.FlexibleFieldLabel,
+            flexibleAmount = visit.FlexibleFieldAmount,
+            hoursLabel,
+            payText = pay.Count > 0 ? string.Join(" + ", pay) : "—",
+            children = names.Select((n, i) => new
+            {
+                name = n,
+                age = i < ages.Count ? ages[i] : 0,
+                wristband = i < childBands.Count ? childBands[i] : ""
+            }).ToList()
+        };
+    }
 }

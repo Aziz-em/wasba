@@ -1,5 +1,7 @@
 using KidsArea.Domain.Enums;
+
 namespace KidsArea.Domain.Entities;
+
 public class Visit : BaseEntity
 {
     public string ReceiptNumber { get; set; } = "";
@@ -11,12 +13,15 @@ public class Visit : BaseEntity
     public int ChildAge { get; set; }
     public string? SiblingNames { get; set; }
     public string? SiblingAges { get; set; }
+    public string? SiblingWristbands { get; set; }
+    public string? ChildWristband { get; set; }
+    public string? CompanionWristbands { get; set; }
     public int CompanionsCount { get; set; }
-    public int ExtraCompanionsCount { get; set; } // beyond 2 free
+    public int ExtraCompanionsCount { get; set; }
     public PricingMode PricingMode { get; set; }
-    public int SiblingsCount { get; set; } // 0 if individual; 2+ if siblings
+    public int SiblingsCount { get; set; }
     public DurationPackage Package { get; set; }
-    public int PackageHours { get; set; } // 1,2,3 or 0 for full day
+    public int PackageHours { get; set; }
     public DateTime CheckInTime { get; set; }
     public DateTime? ExpectedCheckOutTime { get; set; }
     public DateTime? CheckOutTime { get; set; }

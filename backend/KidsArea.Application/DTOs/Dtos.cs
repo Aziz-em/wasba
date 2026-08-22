@@ -11,9 +11,11 @@ public record CheckInDto(
     string CustomerName,
     string ChildName,
     int ChildAge,
+    string? ChildWristband,
     int CompanionsCount,
-    int SiblingsCount, // 0 or 1 = individual; 2+ = siblings mode
-    int Package, // DurationPackage
+    List<string>? CompanionWristbands,
+    int SiblingsCount,
+    int Package,
     int? MembershipId,
     bool UseMembership,
     bool UseFlexibleField,
@@ -25,7 +27,7 @@ public record CheckInDto(
     List<SiblingInputDto>? Siblings
 );
 
-public record SiblingInputDto(string Name, int Age);
+public record SiblingInputDto(string Name, int Age, string? Wristband);
 
 public record CheckInResultDto(
     int VisitId,

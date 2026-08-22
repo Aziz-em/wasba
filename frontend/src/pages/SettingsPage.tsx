@@ -153,14 +153,15 @@ export default function SettingsPage() {
           </Grid>
           <Grid item xs={6}>
             <TextField fullWidth select label="سمة الأيقونات" value={s.iconTheme} onChange={e => set('iconTheme', e.target.value)}>
-              <MenuItem value="classic">كلاسيك</MenuItem>
-              <MenuItem value="colorful">ملون</MenuItem>
-              <MenuItem value="simple">بسيط</MenuItem>
-              <MenuItem value="ocean">محيط هادئ</MenuItem>
-              <MenuItem value="sunset">غروب دافئ</MenuItem>
-              <MenuItem value="garden">حديقة مرحة</MenuItem>
-              <MenuItem value="candy">ألوان حلوة</MenuItem>
-            </TextField>
+  <MenuItem value="rainbow">قوس قزح (ألوان صارخة)</MenuItem>
+  <MenuItem value="neon">نيون داكن</MenuItem>
+  <MenuItem value="kids">أطفال مرح</MenuItem>
+  <MenuItem value="ocean">محيط</MenuItem>
+  <MenuItem value="contrast">تباين قوي</MenuItem>
+  <MenuItem value="pastel">باستيل ناعم</MenuItem>
+  <MenuItem value="darkblock">داكن كتل لونية</MenuItem>
+  <MenuItem value="metro">مترو مسطح</MenuItem>
+</TextField>
           </Grid>
           <Grid item xs={12} md={4}>
             <ImageUpload label="الشعار (Logo)" type="logo" current={s.logoPath} onDone={load} />

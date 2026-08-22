@@ -13,9 +13,11 @@ public class ShiftService
 
     public async Task OpenAsync(OpenShiftDto dto, int cashierId)
     {
+        // وردية واحدة للمحل بالكامل — مش لكل مستخدم
         var anyOpen = await _db.CashShifts.AnyAsync(s =>
-    s.Status == ShiftStatus.Open && !s.IsDeleted);
-if (anyOpen) throw new InvalidOperationException("توجد وردية مفتوحة بالفعل — وردية واحدة للمحل");
+            s.Status == ShiftStatus.Open && !s.IsDeleted);
+        if (anyOpen)
+            throw new InvalidOperationException("توجد وردية مفتوحة بالفعل — وردية واحدة للمحل");
 
         _db.CashShifts.Add(new CashShift
         {
@@ -27,14 +29,16 @@ if (anyOpen) throw new InvalidOperationException("توجد وردية مفتوح
         await _db.SaveChangesAsync();
     }
 
+    // أي مستخدم يرى نفس الوردية المفتوحة
     public async Task<CashShift?> GetCurrentAsync(int cashierId) =>
-    await _db.CashShifts.Include(s => s.Cashier)
-        .FirstOrDefaultAsync(s => s.Status == ShiftStatus.Open && !s.IsDeleted);
+        await _db.CashShifts.Include(s => s.Cashier)
+            .FirstOrDefaultAsync(s => s.Status == ShiftStatus.Open && !s.IsDeleted);
 
     public async Task<DayReportDto> CloseAsync(CloseShiftDto dto, int cashierId)
     {
         var shift = await GetCurrentAsync(cashierId)
             ?? throw new InvalidOperationException("لا توجد وردية مفتوحة");
+
         var summary = await BuildTreasuryAsync(shift.Id, shift.OpeningBalance);
         shift.ClosedAt = DateTime.UtcNow;
         shift.ExpectedCash = summary.ExpectedCash;
@@ -54,15 +58,17 @@ if (anyOpen) throw new InvalidOperationException("توجد وردية مفتوح
         return await BuildTreasuryAsync(shift.Id, shift.OpeningBalance);
     }
 
-    public async Task<(List<CashShift> Items, int Total, int Page, int PageSize)> ClosedShiftsAsync(DateTime? from, DateTime? to, int page = 1, int pageSize = 25) {
-        page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
+    public async Task<(List<CashShift> Items, int Total, int Page, int PageSize)> ClosedShiftsAsync(DateTime? from, DateTime? to, int page = 1, int pageSize = 25)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var query = _db.CashShifts.Include(s => s.Cashier)
-            .Where(s => s.Status == ShiftStatus.Closed && !s.IsDeleted)
-            .AsQueryable();
+            .Where(s => s.Status == ShiftStatus.Closed && !s.IsDeleted);
         if (from.HasValue) query = query.Where(s => s.ClosedAt >= from.Value.Date);
         if (to.HasValue) query = query.Where(s => s.ClosedAt < to.Value.Date.AddDays(1));
         var total = await query.CountAsync();
-        var items = await query.OrderByDescending(s => s.ClosedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        var items = await query.OrderByDescending(s => s.ClosedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         return (items, total, page, pageSize);
     }
 
