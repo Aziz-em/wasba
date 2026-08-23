@@ -55,9 +55,9 @@ public class PricingEngine
         return checkIn.AddHours(h);
     }
 
-    /// <summary>
-    /// Overage after package end: 15 min grace then full hours.
-    /// Full day: never overage.
+       /// <summary>
+    /// بعد انتهاء الباقة + السماحية: يُحسب سعر باقة إجمالي الساعات
+    /// (1 / 2 / 3 / يوم كامل) ويُخصم ما دُفع عند الدخول على الباقة فقط.
     /// </summary>
     public (int overageHours, decimal amount) CalculateOverage(
         SystemSettings s,
@@ -74,22 +74,21 @@ public class PricingEngine
             return (0, 0);
 
         var minutesOver = (checkOutUtc - expected).TotalMinutes;
-        // After grace, charge full hours from end of package (ceil)
-        var hours = (int)Math.Ceiling(minutesOver / 60.0);
-        if (hours < 1) hours = 1;
+        var extraHours = (int)Math.Ceiling(minutesOver / 60.0);
+        if (extraHours < 1) extraHours = 1;
 
-        decimal perHour;
-        if (visit.PricingMode == PricingMode.Siblings && visit.SiblingsCount >= 2)
-        {
-            // use 1-hour sibling price for that count
-            var row = siblingPrices.FirstOrDefault(x => x.SiblingsCount == visit.SiblingsCount && x.DurationPackage == (int)DurationPackage.OneHour);
-            perHour = row?.Price ?? s.Price1Hour;
-        }
-        else
-        {
-            perHour = s.Price1Hour;
-        }
+        var totalHours = visit.PackageHours + extraHours;
 
-        return (hours, Math.Round(hours * perHour, 2));
+        DurationPackage targetPackage =
+            totalHours <= 1 ? DurationPackage.OneHour :
+            totalHours <= 2 ? DurationPackage.TwoHours :
+            totalHours <= 3 ? DurationPackage.ThreeHours :
+            DurationPackage.FullDay;
+
+        var newPackagePrice = GetPackagePrice(
+            s, siblingPrices, visit.PricingMode, visit.SiblingsCount, targetPackage);
+
+        // الفرق عن سعر الباقة المدفوعة عند الدخول فقط (بدون مرافقين/مرن)
+        var amount = Math.Max(0, Math.Round(newPackagePrice - visit.PackageAmount, 2));
+        return (extraHours, amount);
     }
-}

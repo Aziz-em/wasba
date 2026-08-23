@@ -8,9 +8,9 @@ import { mediaUrl } from '../utils/media'
 
 const links = [
   { t: 'الرئيسية', p: '/' },
-  { t: 'دخول طفل', p: '/checkin' },
+  { t: 'تسجيل دخول طفل', p: '/checkin' },
   { t: 'الأطفال النشيطون الآن', p: '/active' },
-  { t: 'خروج', p: '/checkout' },
+  { t: 'تسجيل خروج طفل', p: '/checkout' },
   { t: 'العملاء', p: '/customers' },
   { t: 'حفلة', p: '/party' },
   { t: 'الخزنة', p: '/treasury' },

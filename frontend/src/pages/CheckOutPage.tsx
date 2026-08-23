@@ -3,8 +3,11 @@ import { useSearchParams } from 'react-router-dom'
 import { Box, Typography, Paper, TextField, Button, List, ListItemButton, ListItemText, Alert, Grid } from '@mui/material'
 import api from '../api/client'
 import { toast } from 'react-toastify'
-import { mediaUrl } from '../utils/media'
+import { mediaUrl } from '../utils/time'
 import { localDateTime } from '../utils/time'
+
+// إصلاح استيراد mediaUrl
+import { mediaUrl as media } from '../utils/media'
 
 export default function CheckOutPage() {
   const [params] = useSearchParams()
@@ -17,18 +20,23 @@ export default function CheckOutPage() {
   const [settings, setSettings] = useState<any>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { inputRef.current?.focus(); api.get('/Settings').then(r => setSettings(r.data)).catch(() => {}) }, [])
+  useEffect(() => {
+    inputRef.current?.focus()
+    api.get('/Settings').then(r => setSettings(r.data)).catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (params.get('r')) selectReceipt(params.get('r')!)
   }, [])
 
   useEffect(() => {
     if (q.length >= 2) {
-      api.get('/Visits/active/search', { params: { q } }).then(r => setSuggestions(r.data)).catch(() => setSuggestions([]))
+      api.get('/Visits/active/search', { params: { q } })
+        .then(r => setSuggestions(r.data))
+        .catch(() => setSuggestions([]))
     } else setSuggestions([])
   }, [q])
 
-  // Scanner (keyboard wedge): on Enter with full-ish code
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && q.trim()) {
       e.preventDefault()
@@ -43,49 +51,158 @@ export default function CheckOutPage() {
       const r = await api.get('/Visits/checkout/preview', { params: { receipt } })
       setPreview(r.data)
       setPaidCash(r.data.overageAmount || 0)
-    } catch (e: any) { toast.error(e.response?.data?.message || 'غير موجود'); setPreview(null) }
+      setPaidInsta(0)
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'غير موجود')
+      setPreview(null)
+    }
+  }
+
+  const printExitReceipt = (data: {
+    receiptNumber: string
+    childrenNames: string[]
+    childrenAges?: number[]
+    phone: string
+    checkInTime: string
+    checkOutTime: string
+    packageHours: number
+    extraHours: number
+    packageAmountPaid: number
+    extraAmount: number
+    totalAmount: number
+    paidCash: number
+    paidInsta: number
+    remaining: number
+  }) => {
+    const w = window.open('', '_blank', 'width=320,height=720')
+    if (!w) return
+
+    const logoHtml = settings?.logoPath
+      ? `<div style="text-align:center"><img src="${media(settings.logoPath)}" style="max-height:64px;max-width:160px"/></div>`
+      : ''
+
+    const names = data.childrenNames?.length ? data.childrenNames : ['—']
+    const ages = data.childrenAges || []
+    const childRows = names.map((n, i) => {
+      const first = (n || '').trim().split(/\s+/)[0] || n
+      const age = ages[i] > 0 ? ages[i] : '—'
+      return `<tr><td>${first}</td><td style="text-align:center">${age}</td></tr>`
+    }).join('')
+
+    const totalHoursLabel = data.packageHours + data.extraHours
+    const hoursCost = data.packageAmountPaid + data.extraAmount
+
+    let payMethods: string[] = []
+    if (data.paidCash > 0) payMethods.push('نقدي')
+    if (data.paidInsta > 0) payMethods.push('InstaPay')
+    const payText = payMethods.length ? payMethods.join(' + ') : '—'
+
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>إيصال خروج</title>
+<style>
+  body{font-family:Tahoma,Arial;width:280px;margin:8px auto;font-size:12px}
+  h3,h4{margin:6px 0;text-align:center}
+  .line{border-top:1px dashed #333;margin:10px 0}
+  table{width:100%;border-collapse:collapse;margin:8px 0}
+  th,td{border:1px solid #333;padding:5px 4px}
+  th{background:#f0f0f0;font-size:11px}
+  .cost{text-align:left;white-space:nowrap}
+  .time-row{margin:6px 0}
+  .time-val{font-weight:bold;font-size:12px}
+  .thanks{text-align:center;margin:14px 0 8px;font-weight:bold}
+</style></head><body>
+  ${logoHtml}
+  <h3>${settings?.centerName || 'Kids Area'}</h3>
+  <div style="text-align:center">${settings?.centerPhone || ''}</div>
+  <div class="line"></div>
+  <h4>إيصال خروج</h4>
+  <div>رقم: <b>${data.receiptNumber}</b></div>
+  <div>الهاتف: ${data.phone || ''}</div>
+
+  <table>
+    <thead><tr><th>اسم الطفل</th><th>العمر</th></tr></thead>
+    <tbody>${childRows}</tbody>
+  </table>
+
+  <table>
+    <thead><tr><th>عدد الساعات</th><th>التكلفة</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="text-align:center">${totalHoursLabel}</td>
+        <td class="cost">${hoursCost} ج.م</td>
+      </tr>
+      ${data.extraHours > 0 ? `<tr><td>ساعات إضافية: ${data.extraHours}</td><td class="cost">${data.extraAmount} ج.م</td></tr>` : ''}
+    </tbody>
+  </table>
+
+  <div class="time-row">وقت الدخول: <span class="time-val">${localDateTime(data.checkInTime)}</span></div>
+  <div class="time-row">وقت الخروج: <span class="time-val">${data.checkOutTime}</span></div>
+
+  <div class="line"></div>
+  <div>الإجمالي: <b>${data.totalAmount} ج.م</b></div>
+  <div>المدفوع سابقاً: ${data.packageAmountPaid} ج.م</div>
+  <div>المتبقي: <b>${data.remaining} ج.م</b> (${payText})</div>
+
+  <div class="thanks">شكراً لزيارتكم</div>
+  <script>setTimeout(function(){ window.print(); }, 300);<\/script>
+</body></html>`)
+    w.document.close()
   }
 
   const confirm = async () => {
     if (!preview) return
-    const receiptWindow = window.open('', '_blank', 'width=320,height=520')
-    if (!receiptWindow) {
-      toast.error('تعذر فتح نافذة الإيصال. اسمح بالنوافذ المنبثقة ثم أعد المحاولة')
-      return
-    }
-    receiptWindow.document.write('<html dir="rtl"><body style="font-family:Tahoma;text-align:center;padding:24px">جاري تجهيز الإيصال...</body></html>')
     try {
       const r = await api.post('/Visits/checkout', {
         receiptNumber: preview.receiptNumber,
-        paidCash, paidInstaPay: paidInsta, paidOther: 0, instaPayReference: instaRef || null
+        paidCash,
+        paidInstaPay: paidInsta,
+        paidOther: 0,
+        instaPayReference: instaRef || null
       })
-      toast.success(r.data.overageAmount > 0 ? `تم الخروج — تجاوز ${r.data.overageAmount} ج.م` : 'تم الخروج')
-      if (r.data.printExitReceipt) {
-        const logo = settings?.logoPath ? `<div style="text-align:center"><img src="${mediaUrl(settings.logoPath)}" style="max-height:64px;max-width:160px"/></div>` : ''
-        const children = (preview.childrenNames || [preview.childName]).map((name: string) => `<div>الطفل: ${name}</div>`).join('')
-        receiptWindow.document.write(`<html dir="rtl"><head><title>إيصال خروج</title><style>body{font-family:Tahoma;width:280px;margin:8px auto;font-size:13px}h3,h4{text-align:center}.line{border-top:1px dashed #333;margin:8px 0}</style></head><body>
-          ${logo}<h3>${settings?.centerName || 'Kids Area'}</h3><div style="text-align:center">${settings?.centerPhone || ''}</div><div class="line"></div>
-          <h4>إيصال خروج</h4><div>الإيصال: <b>${preview.receiptNumber}</b></div>${children}
-          <div>رقم الهاتف: ${preview.phone || ''}</div><div>وقت الدخول: ${localDateTime(preview.checkInTime)}</div>
-          <div>وقت الخروج: ${new Date().toLocaleString('ar-EG')}</div><div>الباقة: ${preview.packageName}</div><div>ساعات التجاوز: ${preview.overageHours}</div>
-          <div class="line"></div><div><b>الإجمالي: ${r.data.totalPaid} ج.م</b></div><div>مبلغ التجاوز: ${r.data.overageAmount} ج.م</div>
-          <script>setTimeout(()=>print(),300)<\/script></body></html>`)
-        receiptWindow.document.close()
-      } else {
-        receiptWindow.close()
-      }
-      setPreview(null); setQ(''); setPaidCash(0); setPaidInsta(0)
-    } catch (e: any) { receiptWindow.close(); toast.error(e.response?.data?.message || 'فشل') }
+
+      const extra = r.data.overageAmount || 0
+      toast.success(extra > 0 ? `تم الخروج — ساعات إضافية ${extra} ج.م` : 'تم الخروج')
+
+      // اطبع دائماً إيصال خروج (حتى بدون مبلغ إضافي) — أو فقط عند وجود مبلغ:
+      // if (r.data.printExitReceipt) { ... }
+      const names = preview.childrenNames || [preview.childName]
+      printExitReceipt({
+        receiptNumber: preview.receiptNumber,
+        childrenNames: names,
+        childrenAges: preview.childrenAges || [],
+        phone: preview.phone || '',
+        checkInTime: preview.checkInTime,
+        checkOutTime: new Date().toISOString(),
+        packageHours: preview.isFullDay ? 0 : (preview.packageName === 'ساعتان' ? 2 : preview.packageName === '3 ساعات' ? 3 : 1),
+        extraHours: preview.overageHours || 0,
+        packageAmountPaid: preview.alreadyPaid || 0,
+        extraAmount: extra,
+        totalAmount: r.data.totalPaid,
+        paidCash,
+        paidInsta,
+        remaining: extra
+      })
+
+      setPreview(null)
+      setQ('')
+      setPaidCash(0)
+      setPaidInsta(0)
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'فشل')
+    }
   }
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>تسجيل خروج</Typography>
-      <Typography variant="body2" color="text.secondary" mb={1}>ابحث بجزء من رقم الإيصال أو امسح الـ QR بماسح / كاميرا (الماسح يكتب كاللوحة المفاتيح)</Typography>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>تسجيل خروج طفل</Typography>
+      <Typography variant="body2" color="text.secondary" mb={1}>
+        ابحث بجزء من رقم الإيصال أو امسح الـ QR
+      </Typography>
       <Paper sx={{ p: 2, mb: 2, maxWidth: 520 }}>
-        <TextField fullWidth inputRef={inputRef} label="رقم الإيصال / بحث" value={q}
+        <TextField
+          fullWidth inputRef={inputRef} label="رقم الإيصال / بحث" value={q}
           onChange={e => setQ(e.target.value)} onKeyDown={onKeyDown}
-          placeholder="آخر 3 أرقام أو المسح..." autoComplete="off" />
+          placeholder="آخر 3 أرقام أو المسح..." autoComplete="off"
+        />
         {suggestions.length > 0 && (
           <List dense>
             {suggestions.map(s => (
@@ -96,26 +213,37 @@ export default function CheckOutPage() {
           </List>
         )}
       </Paper>
+
       {preview && (
         <Paper sx={{ p: 2, maxWidth: 520 }}>
           <Typography>الطفل: <b>{preview.childName}</b></Typography>
           <Typography>الدخول: {localDateTime(preview.checkInTime)}</Typography>
           <Typography>الباقة: {preview.packageName}</Typography>
           {preview.isFullDay ? (
-            <Alert severity="info" sx={{ my: 1 }}>يوم كامل — لا رسوم تجاوز</Alert>
+            <Alert severity="info" sx={{ my: 1 }}>يوم كامل — لا ساعات إضافية</Alert>
           ) : preview.overageAmount > 0 ? (
-            <Alert severity="warning" sx={{ my: 1 }}>تجاوز: {preview.overageHours} ساعة = {preview.overageAmount} ج.م (بعد سماحية 15 د)</Alert>
+            <Alert severity="warning" sx={{ my: 1 }}>
+              ساعات إضافية: {preview.overageHours} — المطلوب {preview.overageAmount} ج.م (بعد السماحية)
+            </Alert>
           ) : (
             <Alert severity="success" sx={{ my: 1 }}>ضمن الباقة / السماحية — لا مبلغ إضافي</Alert>
           )}
           {preview.overageAmount > 0 && (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={6}><TextField fullWidth type="number" label="نقدي" value={paidCash} onChange={e => setPaidCash(+e.target.value)} /></Grid>
-              <Grid item xs={6}><TextField fullWidth type="number" label="InstaPay" value={paidInsta} onChange={e => setPaidInsta(+e.target.value)} /></Grid>
-              <Grid item xs={12}><TextField fullWidth label="مرجع InstaPay (اختياري)" value={instaRef} onChange={e => setInstaRef(e.target.value)} /></Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth type="number" label="نقدي" value={paidCash} onChange={e => setPaidCash(+e.target.value)} />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth type="number" label="InstaPay" value={paidInsta} onChange={e => setPaidInsta(+e.target.value)} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth label="مرجع InstaPay (اختياري)" value={instaRef} onChange={e => setInstaRef(e.target.value)} />
+              </Grid>
             </Grid>
           )}
-          <Button fullWidth variant="contained" color="warning" size="large" sx={{ mt: 2 }} onClick={confirm}>تأكيد الخروج</Button>
+          <Button fullWidth variant="contained" color="warning" size="large" sx={{ mt: 2 }} onClick={confirm}>
+            تأكيد الخروج
+          </Button>
         </Paper>
       )}
     </Box>
