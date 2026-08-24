@@ -14,6 +14,8 @@ const theme = createTheme({
   palette: { primary: { main: '#1565c0' }, secondary: { main: '#00838f' } }
 }, arSA)
 
+document.documentElement.setAttribute('dir', 'rtl')
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
