@@ -72,4 +72,24 @@ public class CustomerService
     public async Task<Customer?> GetByPhoneAsync(string phone) =>
         await _db.Customers.Include(c => c.Children).Include(c => c.Memberships).ThenInclude(m => m.MembershipType)
             .FirstOrDefaultAsync(c => c.Phone == phone.Trim() && !c.IsDeleted);
+    public async Task<object> GetVisitsAsync(int customerId)
+    {
+        var list = await _db.Visits.AsNoTracking()
+            .Where(v => v.CustomerId == customerId && !v.IsDeleted)
+            .OrderByDescending(v => v.CheckInTime)
+            .Select(v => new {
+                v.Id,
+                v.ReceiptNumber,
+                v.ChildName,
+                v.ChildAge,
+                v.CheckInTime,
+                v.CheckOutTime,
+                v.TotalAmount,
+                v.PaidCash,
+                v.PaidInstaPay,
+                Status = v.Status.ToString(),
+                Package = v.Package.ToString()
+            }).ToListAsync();
+        return list;
+    }
 }

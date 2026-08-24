@@ -44,4 +44,6 @@ public class CustomersController : ControllerBase
         var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
         return File(bytes, "text/csv", $"customers_{DateTime.Now:yyyyMMdd_HHmm}.csv");
     }
+        [HttpGet("{id}/visits")]
+    public async Task<IActionResult> Visits(int id) => Ok(await _s.GetVisitsAsync(id));
 }

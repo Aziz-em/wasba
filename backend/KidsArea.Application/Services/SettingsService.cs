@@ -18,9 +18,9 @@ public class SettingsService
             .Select(x => new SiblingPriceDto(x.SiblingsCount, x.DurationPackage, x.Price)).ToListAsync();
         var methods = await _db.PaymentMethods.Where(x => !x.IsDeleted).OrderBy(x => x.SortOrder)
             .Select(x => new PaymentMethodDto(x.Id, x.Name, x.Code, x.IsActive, x.SortOrder)).ToListAsync();
-        return new SettingsDto(
+                return new SettingsDto(
             s.CenterName, s.CenterPhone, s.ClosingTime, s.LogoPath, s.LoginBackgroundPath, s.HomeBackgroundPath, s.IconTheme,
-            s.GraceMinutes, s.Price1Hour, s.Price2Hours, s.Price3Hours, s.PriceFullDay, s.ExtraCompanionPrice,
+            s.GraceMinutes, s.Price1Hour, s.Price2Hours, s.Price3Hours, s.Price4Hours, s.PriceFullDay, s.ExtraCompanionPrice,
             s.FlexibleFieldEnabled, s.FlexibleFieldLabel, s.FlexibleFieldPrice, s.QrOnReceipt, siblings, methods
         );
     }
@@ -31,7 +31,9 @@ public class SettingsService
         s.CenterName = dto.CenterName; s.CenterPhone = dto.CenterPhone; s.ClosingTime = dto.ClosingTime;
         s.IconTheme = dto.IconTheme; s.GraceMinutes = dto.GraceMinutes;
         s.Price1Hour = dto.Price1Hour; s.Price2Hours = dto.Price2Hours;
-        s.Price3Hours = dto.Price3Hours; s.PriceFullDay = dto.PriceFullDay;
+        s.Price3Hours = dto.Price3Hours;
+        s.Price4Hours = dto.Price4Hours;
+        s.PriceFullDay = dto.PriceFullDay;
         s.ExtraCompanionPrice = dto.ExtraCompanionPrice;
         s.FlexibleFieldEnabled = dto.FlexibleFieldEnabled; s.FlexibleFieldLabel = dto.FlexibleFieldLabel;
         s.FlexibleFieldPrice = dto.FlexibleFieldPrice; s.QrOnReceipt = dto.QrOnReceipt;

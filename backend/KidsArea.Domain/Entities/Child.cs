@@ -1,4 +1,5 @@
 namespace KidsArea.Domain.Entities;
+
 public class Child : BaseEntity
 {
     public int CustomerId { get; set; }

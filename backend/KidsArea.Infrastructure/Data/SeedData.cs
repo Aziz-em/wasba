@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KidsArea.Infrastructure.Data;
+
 public static class SeedData
 {
     public static async Task InitAsync(IServiceProvider sp)
@@ -11,7 +12,7 @@ public static class SeedData
         using var scope = sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();
-        await EnsureVisitSiblingColumnsAsync(db);
+        await EnsureExtraColumnsAsync(db);
         await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_Customers_Phone ON Customers (Phone)");
         await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_Visits_CheckInTime ON Visits (CheckInTime)");
         await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS IX_Visits_CustomerId ON Visits (CustomerId)");
@@ -34,20 +35,30 @@ public static class SeedData
 
         db.SystemSettings.Add(new SystemSettings
         {
-            Id = 1, CenterName = "Kids Area", CenterPhone = "01000000000", ClosingTime = "23:00",
+            Id = 1,
+            CenterName = "Kids Area",
+            CenterPhone = "01000000000",
+            ClosingTime = "23:00",
             GraceMinutes = 15,
-            Price1Hour = 50, Price2Hours = 90, Price3Hours = 120, PriceFullDay = 200,
+            Price1Hour = 50,
+            Price2Hours = 90,
+            Price3Hours = 120,
+            Price4Hours = 150,
+            PriceFullDay = 200,
             ExtraCompanionPrice = 15,
-            FlexibleFieldEnabled = false, FlexibleFieldLabel = "إضافة", FlexibleFieldPrice = 0,
-            QrOnReceipt = true, IconTheme = "classic"
+            FlexibleFieldEnabled = false,
+            FlexibleFieldLabel = "إضافة",
+            FlexibleFieldPrice = 0,
+            QrOnReceipt = true,
+            IconTheme = "classic"
         });
 
-        // sample sibling prices 2..4 for 1h/2h/3h/full
         foreach (var count in new[] { 2, 3, 4 })
         {
             db.SiblingPrices.Add(new SiblingPrice { SiblingsCount = count, DurationPackage = 1, Price = 40 + count * 10 });
             db.SiblingPrices.Add(new SiblingPrice { SiblingsCount = count, DurationPackage = 2, Price = 70 + count * 15 });
             db.SiblingPrices.Add(new SiblingPrice { SiblingsCount = count, DurationPackage = 3, Price = 100 + count * 15 });
+            db.SiblingPrices.Add(new SiblingPrice { SiblingsCount = count, DurationPackage = 5, Price = 120 + count * 18 });
             db.SiblingPrices.Add(new SiblingPrice { SiblingsCount = count, DurationPackage = 4, Price = 150 + count * 20 });
         }
 
@@ -64,9 +75,13 @@ public static class SeedData
         await db.SaveChangesAsync();
     }
 
-    private static async Task EnsureVisitSiblingColumnsAsync(AppDbContext db)
+    private static async Task EnsureExtraColumnsAsync(AppDbContext db)
     {
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN SiblingNames TEXT"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN SiblingAges TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN SiblingWristbands TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN ChildWristband TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN CompanionWristbands TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE SystemSettings ADD COLUMN Price4Hours REAL NOT NULL DEFAULT 0"); } catch { }
     }
 }

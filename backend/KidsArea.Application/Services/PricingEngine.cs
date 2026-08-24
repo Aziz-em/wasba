@@ -12,9 +12,10 @@ public class PricingEngine
             return package switch
             {
                 DurationPackage.OneHour => s.Price1Hour,
-                DurationPackage.TwoHours => s.Price2Hours,
-                DurationPackage.ThreeHours => s.Price3Hours,
-                DurationPackage.FullDay => s.PriceFullDay,
+DurationPackage.TwoHours => s.Price2Hours,
+DurationPackage.ThreeHours => s.Price3Hours,
+DurationPackage.FourHours => s.Price4Hours,
+DurationPackage.FullDay => s.PriceFullDay,
                 _ => 0
             };
         }
@@ -33,9 +34,10 @@ public class PricingEngine
     public int PackageToHours(DurationPackage package) => package switch
     {
         DurationPackage.OneHour => 1,
-        DurationPackage.TwoHours => 2,
-        DurationPackage.ThreeHours => 3,
-        DurationPackage.FullDay => 0, // special
+DurationPackage.TwoHours => 2,
+DurationPackage.ThreeHours => 3,
+DurationPackage.FourHours => 4,
+DurationPackage.FullDay => 0,
         _ => 1
     };
 
@@ -80,10 +82,11 @@ public class PricingEngine
         var totalHours = visit.PackageHours + extraHours;
 
         DurationPackage targetPackage =
-            totalHours <= 1 ? DurationPackage.OneHour :
-            totalHours <= 2 ? DurationPackage.TwoHours :
-            totalHours <= 3 ? DurationPackage.ThreeHours :
-            DurationPackage.FullDay;
+    totalHours <= 1 ? DurationPackage.OneHour :
+    totalHours <= 2 ? DurationPackage.TwoHours :
+    totalHours <= 3 ? DurationPackage.ThreeHours :
+    totalHours <= 4 ? DurationPackage.FourHours :
+    DurationPackage.FullDay;
 
         var newPackagePrice = GetPackagePrice(
             s, siblingPrices, visit.PricingMode, visit.SiblingsCount, targetPackage);
@@ -92,3 +95,4 @@ public class PricingEngine
         var amount = Math.Max(0, Math.Round(newPackagePrice - visit.PackageAmount, 2));
         return (extraHours, amount);
     }
+}

@@ -17,6 +17,7 @@ public class SystemSettings : BaseEntity
     public decimal Price1Hour { get; set; }
     public decimal Price2Hours { get; set; }
     public decimal Price3Hours { get; set; }
+        public decimal Price4Hours { get; set; }
     public decimal PriceFullDay { get; set; }
 
     // Extra companion (3rd+)

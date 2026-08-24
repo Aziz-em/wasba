@@ -1,10 +1,46 @@
 import { useEffect, useState } from 'react'
-import { Box, Typography, Paper, TextField, Button, Grid, MenuItem, Divider, Alert } from '@mui/material'
+import {
+  Box, Typography, Paper, TextField, Button, Grid, MenuItem, Divider, Alert,
+  Accordion, AccordionSummary, AccordionDetails
+} from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import api from '../api/client'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { localDateTime } from '../utils/time'
+import { mediaUrl } from '../utils/media'
+
+const fieldSx = {
+  direction: 'rtl' as const,
+  '& .MuiInputBase-input': { textAlign: 'right', direction: 'rtl' },
+  '& .MuiInputLabel-root': { right: 24, left: 'auto', transformOrigin: 'top right' },
+  '& .MuiOutlinedInput-notchedOutline': { borderWidth: 2 },
+  '& .MuiFormHelperText-root': { textAlign: 'right', direction: 'rtl' }
+}
+
+function packagePriceOf(settings: any, pkg: number, siblings: number) {
+  if (!settings) return 0
+  if (siblings >= 2) {
+    const row = (settings.siblingPrices || []).find(
+      (x: any) => x.siblingsCount === siblings && x.durationPackage === pkg
+    )
+    return row?.price || 0
+  }
+  if (pkg === 1) return settings.price1Hour || 0
+  if (pkg === 2) return settings.price2Hours || 0
+  if (pkg === 3) return settings.price3Hours || 0
+  if (pkg === 5) return settings.price4Hours || 0
+  return settings.priceFullDay || 0
+}
+
+function hoursLabelOf(pkg: number) {
+  if (pkg === 1) return '1'
+  if (pkg === 2) return '2'
+  if (pkg === 3) return '3'
+  if (pkg === 5) return '4'
+  return 'يوم كامل'
+}
 
 export default function CheckInPage() {
   const nav = useNavigate()
@@ -24,37 +60,31 @@ export default function CheckInPage() {
   const [instaRef, setInstaRef] = useState('')
   const [result, setResult] = useState<any>(null)
 
-  useEffect(() => { api.get('/Settings').then(r => setSettings(r.data)).catch(() => {}) }, [])
+  useEffect(() => {
+    api.get('/Settings').then(r => setSettings(r.data)).catch(() => {})
+  }, [])
 
   const findCustomer = async () => {
     if (phone.length < 3) return
     try { await api.get(`/Customers/phone/${phone}`) } catch { /* تجاهل */ }
   }
 
-  const calcPreview = () => {
+  const total = (() => {
     if (!settings) return 0
-    let packagePrice = 0
-    if (siblings >= 2) {
-      const row = (settings.siblingPrices || []).find((x: any) => x.siblingsCount === siblings && x.durationPackage === pkg)
-      packagePrice = row?.price || 0
-    } else {
-      packagePrice = pkg === 1 ? settings.price1Hour : pkg === 2 ? settings.price2Hours : pkg === 3 ? settings.price3Hours : settings.priceFullDay
-    }
+    const packagePrice = packagePriceOf(settings, pkg, siblings)
     const extraComp = Math.max(0, companions - 2) * (settings.extraCompanionPrice || 0)
-    const flex = settings.flexibleFieldEnabled && useFlex ? settings.flexibleFieldPrice : 0
+    const flex = settings.flexibleFieldEnabled && useFlex ? (settings.flexibleFieldPrice || 0) : 0
     return packagePrice + extraComp + flex
-  }
-
-  const total = calcPreview()
+  })()
 
   const changeSiblings = (count: number) => {
-  setSiblings(count)
-  setSiblingDetails(current =>
-    Array.from({ length: Math.max(0, count - 1) }, (_, index) =>
-      current[index] || { name: '', age: 5, wristband: '' }
+    setSiblings(count)
+    setSiblingDetails(current =>
+      Array.from({ length: Math.max(0, count - 1) }, (_, index) =>
+        current[index] || { name: '', age: 5, wristband: '' }
+      )
     )
-  )
-}
+  }
 
   const changeCompanions = (count: number) => {
     const n = Math.max(0, count)
@@ -62,7 +92,16 @@ export default function CheckInPage() {
     setCompanionBands(current => Array.from({ length: n }, (_, i) => current[i] || ''))
   }
 
-    const submit = async () => {
+  const setCompanionBand = (index: number, value: string) => {
+    setCompanionBands(cur => {
+      const n = [...cur]
+      while (n.length < companions) n.push('')
+      n[index] = value
+      return n
+    })
+  }
+
+  const submit = async () => {
     try {
       const body = {
         phone,
@@ -99,15 +138,15 @@ export default function CheckInPage() {
     }
   }
 
-   const printReceipt = (data: any) => {
+  const printReceipt = (data: any) => {
     const w = window.open('', '_blank', 'width=320,height=720')
     if (!w) return
 
-    const logoHtml = settings?.logoPath
-      ? `<div style="text-align:center"><img src="${settings.logoPath}" style="max-height:64px;max-width:160px"/></div>`
+    const logoSrc = mediaUrl(settings?.logoPath)
+    const logoHtml = logoSrc
+      ? `<div style="text-align:center"><img src="${logoSrc}" style="max-height:64px;max-width:160px"/></div>`
       : ''
 
-    // صفوف الأطفال: الأساسي + الأخوة
     const childrenRows: { name: string; age: number; band: string }[] = [
       { name: childName, age: childAge, band: childWristband || '—' }
     ]
@@ -123,25 +162,16 @@ export default function CheckInPage() {
       </tr>`
     ).join('')
 
-    // تكلفة المرافقين
     const extraCompPrice = settings?.extraCompanionPrice || 0
     const companionsCost = Math.max(0, companions - 2) * extraCompPrice
     const companionsCostText = companions <= 2 ? 'مجاني' : `${companionsCost} ج.م`
     const companionBandsText = (companionBands || []).filter(Boolean).join(' ، ') || '—'
 
-    // عدد الساعات والتكلفة (بدون ذكر باقة أخوة)
-    const hoursLabel = pkg === 4 ? 'يوم كامل' : String(pkg === 1 ? 1 : pkg === 2 ? 2 : 3)
-    let packagePrice = 0
-    if (siblings >= 2) {
-      const row = (settings?.siblingPrices || []).find((x: any) => x.siblingsCount === siblings && x.durationPackage === pkg)
-      packagePrice = row?.price || 0
-    } else {
-      packagePrice = pkg === 1 ? settings?.price1Hour : pkg === 2 ? settings?.price2Hours : pkg === 3 ? settings?.price3Hours : settings?.priceFullDay
-    }
+    const hoursLabel = hoursLabelOf(pkg)
+    const packagePrice = packagePriceOf(settings, pkg, siblings)
     const flex = settings?.flexibleFieldEnabled && useFlex ? (settings?.flexibleFieldPrice || 0) : 0
 
-    // الدفع: طريقة بجانب المبلغ — بدون تفاصيل التقسيم على الورق
-    let payMethods: string[] = []
+    const payMethods: string[] = []
     if (paidCash > 0) payMethods.push('نقدي')
     if (paidInsta > 0) payMethods.push('InstaPay')
     const payText = payMethods.length ? payMethods.join(' + ') : '—'
@@ -174,18 +204,12 @@ export default function CheckInPage() {
   <div>الهاتف: ${phone}</div>
 
   <table>
-    <thead>
-      <tr><th>اسم الطفل</th><th>العمر</th><th>رقم السوار</th></tr>
-    </thead>
-    <tbody>
-      ${childrenTableRows}
-    </tbody>
+    <thead><tr><th>اسم الطفل</th><th>العمر</th><th>رقم السوار</th></tr></thead>
+    <tbody>${childrenTableRows}</tbody>
   </table>
 
   <table>
-    <thead>
-      <tr><th>عدد المرافقين</th><th>رقم السوار</th><th>التكلفة</th></tr>
-    </thead>
+    <thead><tr><th>عدد المرافقين</th><th>رقم السوار</th><th>التكلفة</th></tr></thead>
     <tbody>
       <tr>
         <td style="text-align:center">${companions}</td>
@@ -196,9 +220,7 @@ export default function CheckInPage() {
   </table>
 
   <table>
-    <thead>
-      <tr><th>عدد الساعات</th><th>التكلفة</th></tr>
-    </thead>
+    <thead><tr><th>عدد الساعات</th><th>التكلفة</th></tr></thead>
     <tbody>
       <tr>
         <td style="text-align:center">${hoursLabel}</td>
@@ -238,71 +260,123 @@ export default function CheckInPage() {
         <Button fullWidth variant="contained" onClick={() => printReceipt(result)}>إعادة طباعة الإيصال</Button>
         <Button fullWidth sx={{ mt: 1 }} onClick={() => { setResult(null); nav('/active') }}>عرض الحاليين</Button>
         <Button fullWidth sx={{ mt: 1 }} onClick={() => {
-          setResult(null); setChildName(''); setChildWristband(''); setCompanionBands([]); setCompanions(0); setPaidCash(0); setPaidInsta(0)
+          setResult(null)
+          setChildName('')
+          setChildWristband('')
+          setCompanionBands([])
+          setCompanions(0)
+          setSiblingDetails([])
+          setSiblings(0)
+          setPaidCash(0)
+          setPaidInsta(0)
         }}>دخول جديد</Button>
       </Paper>
     )
   }
+
+  const childCount = 1 + siblingDetails.length
 
   return (
     <Box>
       <Typography variant="h5" fontWeight="bold" gutterBottom>تسجيل دخول طفل</Typography>
       <Paper sx={{ p: 2 }}>
         <Grid container spacing={2}>
+          {/* 1) الهاتف */}
           <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="رقم هاتف ولي الأمر *" value={phone} onChange={e => setPhone(e.target.value)} onBlur={findCustomer} />
+            <TextField fullWidth label="رقم هاتف ولي الأمر *" value={phone}
+              onChange={e => setPhone(e.target.value)} onBlur={findCustomer} sx={fieldSx} />
           </Grid>
-          <Grid item xs={8}>
-            <TextField fullWidth label="اسم الطفل *" value={childName} onChange={e => setChildName(e.target.value)} />
+
+          {/* 2) مرافقين / أخوة / ساعات */}
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth type="number" label="عدد المرافقين" value={companions}
+              onChange={e => changeCompanions(+e.target.value)} inputProps={{ min: 0 }}
+              helperText="أول 2 مجاناً" sx={fieldSx} />
           </Grid>
-          <Grid item xs={4}>
-            <TextField fullWidth type="number" label="العمر *" value={childAge} onChange={e => setChildAge(+e.target.value)} inputProps={{ min: 1 }} />
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings}
+              onChange={e => changeSiblings(+e.target.value)} inputProps={{ min: 0 }}
+              helperText="2 فأكثر = تسعير أخوة" sx={fieldSx} />
           </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="سوار الطفل *" value={childWristband} onChange={e => setChildWristband(e.target.value)} helperText="رقم السوار المرتبط بهذه الفاتورة" />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField fullWidth type="number" label="عدد المرافقين" value={companions} onChange={e => changeCompanions(+e.target.value)} inputProps={{ min: 0 }} helperText="أول 2 مجاناً" />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings} onChange={e => changeSiblings(+e.target.value)} inputProps={{ min: 0 }} helperText="2 فأكثر = تسعير أخوة" />
-          </Grid>
-          {companionBands.map((band, index) => (
-            <Grid item xs={6} sm={4} key={index}>
-              <TextField
-                fullWidth
-                label={`سوار مرافق ${index + 1}`}
-                value={band}
-                onChange={e => setCompanionBands(current => current.map((item, i) => i === index ? e.target.value : item))}
-              />
-            </Grid>
-          ))}
-          {siblingDetails.map((sibling, index) => (
-  <Grid item xs={12} key={index}>
-    <Grid container spacing={1}>
-      <Grid item xs={5}>
-        <TextField fullWidth label={`اسم الأخ ${index + 2}`} value={sibling.name}
-          onChange={e => setSiblingDetails(current => current.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} />
-      </Grid>
-      <Grid item xs={3}>
-        <TextField fullWidth type="number" label="العمر" value={sibling.age}
-          onChange={e => setSiblingDetails(current => current.map((item, i) => i === index ? { ...item, age: +e.target.value } : item))} inputProps={{ min: 1 }} />
-      </Grid>
-      <Grid item xs={4}>
-        <TextField fullWidth label={`سوار الأخ ${index + 2}`} value={sibling.wristband}
-          onChange={e => setSiblingDetails(current => current.map((item, i) => i === index ? { ...item, wristband: e.target.value } : item))} />
-      </Grid>
-    </Grid>
-  </Grid>
-))}
-          <Grid item xs={12}>
-            <TextField fullWidth select label="الباقة" value={pkg} onChange={e => setPkg(+e.target.value)}>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth select label="عدد الساعات" value={pkg}
+              onChange={e => setPkg(+e.target.value)} sx={fieldSx}>
               <MenuItem value={1}>ساعة</MenuItem>
               <MenuItem value={2}>ساعتان</MenuItem>
               <MenuItem value={3}>3 ساعات</MenuItem>
+              <MenuItem value={5}>4 ساعات</MenuItem>
               <MenuItem value={4}>يوم كامل</MenuItem>
             </TextField>
           </Grid>
+
+          {/* 3) الطفل الأول */}
+          <Grid item xs={8}>
+            <TextField fullWidth label="اسم الطفل *" value={childName}
+              onChange={e => setChildName(e.target.value)} sx={fieldSx} />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField fullWidth type="number" label="العمر *" value={childAge}
+              onChange={e => setChildAge(+e.target.value)} inputProps={{ min: 1 }} sx={fieldSx} />
+          </Grid>
+
+          {/* 4) الأخوة */}
+          {siblingDetails.map((sibling, index) => (
+            <Grid item xs={12} key={index}>
+              <Grid container spacing={1}>
+                <Grid item xs={8}>
+                  <TextField fullWidth label={`اسم الأخ ${index + 2}`} value={sibling.name}
+                    onChange={e => setSiblingDetails(cur =>
+                      cur.map((it, i) => i === index ? { ...it, name: e.target.value } : it)
+                    )} sx={fieldSx} />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField fullWidth type="number" label="العمر" value={sibling.age}
+                    onChange={e => setSiblingDetails(cur =>
+                      cur.map((it, i) => i === index ? { ...it, age: +e.target.value } : it)
+                    )} inputProps={{ min: 1 }} sx={fieldSx} />
+                </Grid>
+              </Grid>
+            </Grid>
+          ))}
+
+          {/* 5) الأساور — مطوية */}
+          <Grid item xs={12}>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight="bold">أرقام الأساور (اضغط للفتح)</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={1}>
+                  {Array.from({ length: Math.max(childCount, companions) }, (_, i) => (
+                    <Grid item xs={12} key={`band-row-${i}`}>
+                      <Grid container spacing={1}>
+                        <Grid item xs={6}>
+                          {i === 0 ? (
+                            <TextField fullWidth label="سوار الطفل 1" value={childWristband}
+                              onChange={e => setChildWristband(e.target.value)} sx={fieldSx} />
+                          ) : i < childCount ? (
+                            <TextField fullWidth label={`سوار الطفل ${i + 1}`}
+                              value={siblingDetails[i - 1]?.wristband || ''}
+                              onChange={e => setSiblingDetails(cur =>
+                                cur.map((it, idx) => idx === i - 1 ? { ...it, wristband: e.target.value } : it)
+                              )} sx={fieldSx} />
+                          ) : <Box />}
+                        </Grid>
+                        <Grid item xs={6}>
+                          {i < companions ? (
+                            <TextField fullWidth label={`سوار المرافق ${i + 1}`}
+                              value={companionBands[i] || ''}
+                              onChange={e => setCompanionBand(i, e.target.value)} sx={fieldSx} />
+                          ) : <Box />}
+                        </Grid>
+                      </Grid>
+                    </Grid>
+                  ))}
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+          </Grid>
+
           {settings?.flexibleFieldEnabled && (
             <Grid item xs={12}>
               <Button variant={useFlex ? 'contained' : 'outlined'} onClick={() => setUseFlex(!useFlex)}>
@@ -310,11 +384,28 @@ export default function CheckInPage() {
               </Button>
             </Grid>
           )}
-          <Grid item xs={12}><Divider /><Typography variant="h6" mt={1}>المطلوب: {total} ج.م</Typography></Grid>
-          <Grid item xs={6}><TextField fullWidth type="number" label="نقدي" value={paidCash} onChange={e => setPaidCash(+e.target.value)} /></Grid>
-          <Grid item xs={6}><TextField fullWidth type="number" label="InstaPay" value={paidInsta} onChange={e => setPaidInsta(+e.target.value)} /></Grid>
-          <Grid item xs={12}><TextField fullWidth label="مرجع InstaPay (اختياري)" value={instaRef} onChange={e => setInstaRef(e.target.value)} /></Grid>
-          <Grid item xs={12}><Button fullWidth variant="contained" size="large" onClick={submit}>تأكيد الدخول + طباعة</Button></Grid>
+
+          <Grid item xs={12}>
+            <Divider />
+            <Typography variant="h6" mt={1}>المطلوب: {total} ج.م</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth type="number" label="نقدي" value={paidCash}
+              onChange={e => setPaidCash(+e.target.value)} sx={fieldSx} />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField fullWidth type="number" label="InstaPay" value={paidInsta}
+              onChange={e => setPaidInsta(+e.target.value)} sx={fieldSx} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="مرجع InstaPay (اختياري)" value={instaRef}
+              onChange={e => setInstaRef(e.target.value)} sx={fieldSx} />
+          </Grid>
+          <Grid item xs={12}>
+            <Button fullWidth variant="contained" size="large" onClick={submit}>
+              تأكيد الدخول + طباعة
+            </Button>
+          </Grid>
         </Grid>
       </Paper>
     </Box>
