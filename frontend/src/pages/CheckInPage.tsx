@@ -71,7 +71,7 @@ export default function CheckInPage() {
 
   const total = (() => {
     if (!settings) return 0
-    const packagePrice = packagePriceOf(settings, pkg, siblings)
+    const packagePrice = packagePriceOf(settings, pkg, 1 + siblings); // أضف 1 للطفل الأساسي
     const extraComp = Math.max(0, companions - 2) * (settings.extraCompanionPrice || 0)
     const flex = settings.flexibleFieldEnabled && useFlex ? (settings.flexibleFieldPrice || 0) : 0
     return packagePrice + extraComp + flex
