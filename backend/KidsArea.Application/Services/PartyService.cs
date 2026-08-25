@@ -18,14 +18,32 @@ public class PartyService
         var paid = dto.PaidCash + dto.PaidInstaPay + dto.PaidOther;
         if (paid < dto.Amount) throw new InvalidOperationException("المبلغ المدفوع أقل من قيمة الحفلة");
         var p = new PartySale
-        {
-            CustomerName = dto.CustomerName, Phone = dto.Phone, ChildrenCount = dto.ChildrenCount,
-            Amount = dto.Amount, PaidCash = dto.PaidCash, PaidInstaPay = dto.PaidInstaPay, PaidOther = dto.PaidOther,
-            InstaPayReference = dto.InstaPayReference, Notes = dto.Notes, CashierId = cashierId, ShiftId = shift.Id
-        };
+{
+    CustomerName = dto.CustomerName,
+    Phone = dto.Phone,
+    PartyDate = dto.PartyDate,
+    ChildrenCount = dto.ChildrenCount,
+
+    Amount = dto.Amount,
+    PaidCash = dto.PaidCash,
+    PaidInstaPay = dto.PaidInstaPay,
+    PaidOther = dto.PaidOther,
+
+    InstaPayReference = dto.InstaPayReference,
+    Notes = dto.Notes,
+
+    CashierId = cashierId,
+    ShiftId = shift.Id
+};
         _db.PartySales.Add(p);
         await _db.SaveChangesAsync();
-        return new { p.Id, p.Amount };
+        return new
+{
+    p.Id,
+    p.Amount,
+    p.PartyDate,
+    p.SaleTime
+};
     }
 
     public async Task<List<PartySale>> TodayAsync(int shiftId) =>

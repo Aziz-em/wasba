@@ -3,6 +3,7 @@ public class PartySale : BaseEntity
 {
     public string CustomerName { get; set; } = "";
     public string Phone { get; set; } = "";
+    public DateTime? PartyDate { get; set; }
     public int ChildrenCount { get; set; }
     public decimal Amount { get; set; }
     public decimal PaidCash { get; set; }

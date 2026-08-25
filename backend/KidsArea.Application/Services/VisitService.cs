@@ -225,10 +225,21 @@ public class VisitService
         var (hours, amount) = _pricing.CalculateOverage(settings, siblingPrices, visit, now);
 
         return new CheckOutPreviewDto(
-            visit.Id, visit.ReceiptNumber, visit.ChildName, visit.Customer.Phone, visit.CheckInTime, visit.ExpectedCheckOutTime,
-            PackageName(visit.Package), visit.Package == DurationPackage.FullDay,
-            hours, amount, visit.TotalAmount, amount, ChildNames(visit)
-        );
+    visit.Id,
+    visit.ReceiptNumber,
+    visit.ChildName,
+    visit.Customer.Phone,
+    visit.CheckInTime,
+    visit.ExpectedCheckOutTime,
+    PackageName(visit.Package),
+    visit.Package == DurationPackage.FullDay,
+    hours,
+    amount,
+    visit.TotalAmount,
+    amount,
+    ChildNames(visit),
+    ChildAges(visit)
+);
     }
 
     public async Task<CheckOutResultDto> CheckOutAsync(CheckOutDto dto, int cashierId)

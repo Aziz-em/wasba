@@ -134,7 +134,7 @@ export default function CheckOutPage() {
   </table>
 
   <div class="time-row">وقت الدخول: <span class="time-val">${localDateTime(data.checkInTime)}</span></div>
-  <div class="time-row">وقت الخروج: <span class="time-val">${data.checkOutTime}</span></div>
+ <div class="time-row">وقت الخروج: <span class="time-val">${localDateTime(data.checkOutTime)}</span></div>
 
   <div class="line"></div>
   <div>الإجمالي: <b>${data.totalAmount} ج.م</b></div>

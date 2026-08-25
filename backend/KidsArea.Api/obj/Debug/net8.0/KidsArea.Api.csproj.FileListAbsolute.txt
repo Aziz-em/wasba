@@ -1,4 +1,5 @@
 /workspaces/wasba/backend/KidsArea.Api/bin/Debug/net8.0/appsettings.json
+/workspaces/wasba/backend/KidsArea.Api/bin/Debug/net8.0/KidsArea.Api.staticwebassets.runtime.json
 /workspaces/wasba/backend/KidsArea.Api/bin/Debug/net8.0/KidsArea.Api.staticwebassets.endpoints.json
 /workspaces/wasba/backend/KidsArea.Api/bin/Debug/net8.0/KidsArea.Api
 /workspaces/wasba/backend/KidsArea.Api/bin/Debug/net8.0/KidsArea.Api.deps.json
@@ -144,4 +145,3 @@
 /workspaces/wasba/backend/KidsArea.Api/obj/Debug/net8.0/KidsArea.Api.pdb
 /workspaces/wasba/backend/KidsArea.Api/obj/Debug/net8.0/KidsArea.Api.genruntimeconfig.cache
 /workspaces/wasba/backend/KidsArea.Api/obj/Debug/net8.0/ref/KidsArea.Api.dll
-/workspaces/wasba/backend/KidsArea.Api/bin/Debug/net8.0/KidsArea.Api.staticwebassets.runtime.json

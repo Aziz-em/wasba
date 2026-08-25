@@ -1,9 +1,3 @@
-/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.csproj.AssemblyReference.cache
-/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.GeneratedMSBuildEditorConfig.editorconfig
-/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.AssemblyInfoInputs.cache
-/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.AssemblyInfo.cs
-/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.csproj.CoreCompileInputs.cache
-/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.sourcelink.json
 /workspaces/wasba/backend/KidsArea.Application/bin/Debug/net8.0/KidsArea.Application.deps.json
 /workspaces/wasba/backend/KidsArea.Application/bin/Debug/net8.0/KidsArea.Application.dll
 /workspaces/wasba/backend/KidsArea.Application/bin/Debug/net8.0/KidsArea.Application.pdb
@@ -11,6 +5,12 @@
 /workspaces/wasba/backend/KidsArea.Application/bin/Debug/net8.0/KidsArea.Infrastructure.dll
 /workspaces/wasba/backend/KidsArea.Application/bin/Debug/net8.0/KidsArea.Domain.pdb
 /workspaces/wasba/backend/KidsArea.Application/bin/Debug/net8.0/KidsArea.Infrastructure.pdb
+/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.csproj.AssemblyReference.cache
+/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.AssemblyInfoInputs.cache
+/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.AssemblyInfo.cs
+/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.csproj.CoreCompileInputs.cache
+/workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.sourcelink.json
 /workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.DA4A015C.Up2Date
 /workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/KidsArea.Application.dll
 /workspaces/wasba/backend/KidsArea.Application/obj/Debug/net8.0/refint/KidsArea.Application.dll

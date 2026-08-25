@@ -77,7 +77,8 @@ public record CheckOutPreviewDto(
     decimal OverageAmount,
     decimal AlreadyPaid,
     decimal TotalDueNow,
-    List<string> ChildrenNames
+    List<string> ChildrenNames,
+    List<int> ChildrenAges
 );
 
 public record CheckOutResultDto(
@@ -98,7 +99,18 @@ public record MembershipTypeDto(int Id, string Name, string Kind, int DurationDa
 public record SellMembershipDto(int CustomerId, int? ChildId, int MembershipTypeId, decimal PaidCash, decimal PaidInstaPay, decimal PaidOther, string? InstaPayReference);
 public record MembershipDto(int Id, string CustomerName, string Phone, string TypeName, string Kind, DateTime StartDate, DateTime EndDate, int RemainingHours, bool IsActive);
 
-public record PartyDto(string CustomerName, string Phone, int ChildrenCount, decimal Amount, decimal PaidCash, decimal PaidInstaPay, decimal PaidOther, string? InstaPayReference, string? Notes);
+public record PartyDto(
+    string CustomerName,
+    string Phone,
+    DateTime? PartyDate,
+    int ChildrenCount,
+    decimal Amount,
+    decimal PaidCash,
+    decimal PaidInstaPay,
+    decimal PaidOther,
+    string? InstaPayReference,
+    string? Notes
+);
 
 public record SettingsDto(
     string CenterName, string? CenterPhone, string ClosingTime,

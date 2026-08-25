@@ -14,7 +14,6 @@ import { mediaUrl } from '../utils/media'
 const fieldSx = {
   direction: 'rtl' as const,
   '& .MuiInputBase-input': { textAlign: 'right', direction: 'rtl' },
-  '& .MuiInputLabel-root': { right: 24, left: 'auto', transformOrigin: 'top right' },
   '& .MuiOutlinedInput-notchedOutline': { borderWidth: 2 },
   '& .MuiFormHelperText-root': { textAlign: 'right', direction: 'rtl' }
 }
@@ -76,6 +75,10 @@ export default function CheckInPage() {
     const flex = settings.flexibleFieldEnabled && useFlex ? (settings.flexibleFieldPrice || 0) : 0
     return packagePrice + extraComp + flex
   })()
+useEffect(() => {
+  setPaidCash(total)
+  setPaidInsta(0)
+}, [pkg, siblings, companions, useFlex])
 
   const changeSiblings = (count: number) => {
     setSiblings(count)
@@ -190,9 +193,15 @@ export default function CheckInPage() {
   .cost{text-align:left;white-space:nowrap}
   .time-row{margin:6px 0}
   .time-val{font-weight:bold;font-size:12px;letter-spacing:0.3px}
-  .out-val{font-weight:bold;font-size:11px;letter-spacing:0.6px}
+  .out-val{font-weight:bold;font-size:13px;letter-spacing:0.6px}
   .thanks{text-align:center;margin:14px 0 8px;font-weight:bold}
-  .qr{text-align:center;margin:6px 0 4px}
+  .qr{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-top:40px;
+}
   .total{margin:8px 0;font-size:13px}
 </style></head><body>
   ${logoHtml}
@@ -202,6 +211,7 @@ export default function CheckInPage() {
   <h4>إيصال دخول</h4>
   <div>رقم: <b>${data.receiptNumber}</b></div>
   <div>الهاتف: ${phone}</div>
+<div class="time-row">وقت الدخول: <span class="time-val">${inTime}</span></div>
 
   <table>
     <thead><tr><th>اسم الطفل</th><th>العمر</th><th>رقم السوار</th></tr></thead>
@@ -230,14 +240,16 @@ export default function CheckInPage() {
     </tbody>
   </table>
 
-  <div class="time-row">وقت الدخول: <span class="time-val">${inTime}</span></div>
   <div class="time-row">وقت الخروج: <span class="out-val">${outTime}</span></div>
 
   <div class="line"></div>
   <div class="total">الإجمالي: <b>${data.totalAmount} ج.م</b> <span>(${payText})</span></div>
 
   <div class="thanks">شكراً لزيارتكم</div>
-  <div class="qr"><div id="qr"></div></div>
+  
+<div class="qr">
+<div id="qr"></div>
+</div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
   <script>
@@ -282,23 +294,26 @@ export default function CheckInPage() {
       <Paper sx={{ p: 2 }}>
         <Grid container spacing={2}>
           {/* 1) الهاتف */}
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={4}>
             <TextField fullWidth label="رقم هاتف ولي الأمر *" value={phone}
               onChange={e => setPhone(e.target.value)} onBlur={findCustomer} sx={fieldSx} />
           </Grid>
+          <Grid item md={0.5}></Grid>
 
           {/* 2) مرافقين / أخوة / ساعات */}
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={2}>
             <TextField fullWidth type="number" label="عدد المرافقين" value={companions}
               onChange={e => changeCompanions(+e.target.value)} inputProps={{ min: 0 }}
               helperText="أول 2 مجاناً" sx={fieldSx} />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item md={0.5}></Grid>
+          <Grid item xs={12} sm={2}>
             <TextField fullWidth type="number" label="عدد الأخوة (0=فرد)" value={siblings}
               onChange={e => changeSiblings(+e.target.value)} inputProps={{ min: 0 }}
               helperText="2 فأكثر = تسعير أخوة" sx={fieldSx} />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item md={0.5}></Grid>
+          <Grid item xs={12} sm={2}>
             <TextField fullWidth select label="عدد الساعات" value={pkg}
               onChange={e => setPkg(+e.target.value)} sx={fieldSx}>
               <MenuItem value={1}>ساعة</MenuItem>
@@ -309,73 +324,202 @@ export default function CheckInPage() {
             </TextField>
           </Grid>
 
-          {/* 3) الطفل الأول */}
-          <Grid item xs={8}>
-            <TextField fullWidth label="اسم الطفل *" value={childName}
-              onChange={e => setChildName(e.target.value)} sx={fieldSx} />
-          </Grid>
-          <Grid item xs={4}>
-            <TextField fullWidth type="number" label="العمر *" value={childAge}
-              onChange={e => setChildAge(+e.target.value)} inputProps={{ min: 1 }} sx={fieldSx} />
+         <Grid item xs={12}>
+  <Grid container spacing={1}>
+<Grid item xs={12}>
+  <Divider sx={{ my: 2 }} />
+</Grid>
+
+<Grid item xs={12}>
+  <Typography
+    variant="h6"
+    fontWeight="bold"
+    sx={{ mb: 1 }}
+  >
+    بيانات الأطفال
+  </Typography>
+</Grid>
+    <Grid item xs={3}>
+      <TextField
+        fullWidth
+        label="اسم الطفل 1"
+        value={childName}
+        onChange={e => setChildName(e.target.value)}
+        sx={fieldSx}
+      />
+    </Grid>
+
+    <Grid item xs={1}>
+      <TextField
+        fullWidth
+        type="number"
+        label="العمر"
+        value={childAge}
+        onChange={e => setChildAge(+e.target.value)}
+        inputProps={{ min: 1 }}
+        sx={fieldSx}
+      />
+    </Grid>
+    <Grid item md={0.5}></Grid>
+
+    {siblingDetails.slice(0, 2).map((sibling, index) => (
+      <>
+        <Grid item xs={2} key={`name-${index}`}>
+          <TextField
+            fullWidth
+            label={`اسم الأخ ${index + 2}`}
+            value={sibling.name}
+            onChange={e =>
+              setSiblingDetails(cur =>
+                cur.map((it, i) =>
+                  i === index
+                    ? { ...it, name: e.target.value }
+                    : it
+                )
+              )
+            }
+            sx={fieldSx}
+          />
+        </Grid>
+
+        <Grid item xs={1} key={`age-${index}`}>
+          <TextField
+            fullWidth
+            type="number"
+            label="العمر"
+            value={sibling.age}
+            onChange={e =>
+              setSiblingDetails(cur =>
+                cur.map((it, i) =>
+                  i === index
+                    ? { ...it, age: +e.target.value }
+                    : it
+                )
+              )
+            }
+            inputProps={{ min: 1 }}
+            sx={fieldSx}
+          />
+        </Grid>
+      </>
+    ))}
+
+  </Grid>
+</Grid>
+
+{siblingDetails.length > 2 && (
+  <Grid item xs={12}>
+    <Grid container spacing={1}>
+      {siblingDetails.slice(2).map((sibling, index) => (
+        <>
+          <Grid item xs={2}>
+            <TextField
+              fullWidth
+              label={`اسم الأخ ${index + 4}`}
+              value={sibling.name}
+              onChange={e =>
+                setSiblingDetails(cur =>
+                  cur.map((it, i) =>
+                    i === index + 2
+                      ? { ...it, name: e.target.value }
+                      : it
+                  )
+                )
+              }
+              sx={fieldSx}
+            />
           </Grid>
 
-          {/* 4) الأخوة */}
-          {siblingDetails.map((sibling, index) => (
-            <Grid item xs={12} key={index}>
-              <Grid container spacing={1}>
-                <Grid item xs={8}>
-                  <TextField fullWidth label={`اسم الأخ ${index + 2}`} value={sibling.name}
-                    onChange={e => setSiblingDetails(cur =>
-                      cur.map((it, i) => i === index ? { ...it, name: e.target.value } : it)
-                    )} sx={fieldSx} />
-                </Grid>
-                <Grid item xs={4}>
-                  <TextField fullWidth type="number" label="العمر" value={sibling.age}
-                    onChange={e => setSiblingDetails(cur =>
-                      cur.map((it, i) => i === index ? { ...it, age: +e.target.value } : it)
-                    )} inputProps={{ min: 1 }} sx={fieldSx} />
-                </Grid>
-              </Grid>
-            </Grid>
-          ))}
-
-          {/* 5) الأساور — مطوية */}
-          <Grid item xs={12}>
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight="bold">أرقام الأساور (اضغط للفتح)</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Grid container spacing={1}>
-                  {Array.from({ length: Math.max(childCount, companions) }, (_, i) => (
-                    <Grid item xs={12} key={`band-row-${i}`}>
-                      <Grid container spacing={1}>
-                        <Grid item xs={6}>
-                          {i === 0 ? (
-                            <TextField fullWidth label="سوار الطفل 1" value={childWristband}
-                              onChange={e => setChildWristband(e.target.value)} sx={fieldSx} />
-                          ) : i < childCount ? (
-                            <TextField fullWidth label={`سوار الطفل ${i + 1}`}
-                              value={siblingDetails[i - 1]?.wristband || ''}
-                              onChange={e => setSiblingDetails(cur =>
-                                cur.map((it, idx) => idx === i - 1 ? { ...it, wristband: e.target.value } : it)
-                              )} sx={fieldSx} />
-                          ) : <Box />}
-                        </Grid>
-                        <Grid item xs={6}>
-                          {i < companions ? (
-                            <TextField fullWidth label={`سوار المرافق ${i + 1}`}
-                              value={companionBands[i] || ''}
-                              onChange={e => setCompanionBand(i, e.target.value)} sx={fieldSx} />
-                          ) : <Box />}
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                  ))}
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              type="number"
+              label="العمر"
+              value={sibling.age}
+              onChange={e =>
+                setSiblingDetails(cur =>
+                  cur.map((it, i) =>
+                    i === index + 2
+                      ? { ...it, age: +e.target.value }
+                      : it
+                  )
+                )
+              }
+              inputProps={{ min: 1 }}
+              sx={fieldSx}
+            />
           </Grid>
+        </>
+      ))}
+    </Grid>
+  </Grid>
+)}
+<Grid item xs={12}>
+  <Divider sx={{ mt: 2, mb: 1 }} />
+</Grid>
+         <AccordionDetails>
+
+  <Typography fontWeight="bold" sx={{ mb: 1 }}>
+    أساور الأطفال
+  </Typography>
+
+  <Grid container spacing={1}>
+    {Array.from({ length: childCount }, (_, i) => (
+      <Grid item xs={12} sm={6} md={3} key={`child-band-${i}`}>
+        {i === 0 ? (
+          <TextField
+            fullWidth
+            label="سوار الطفل 1"
+            value={childWristband}
+            onChange={e => setChildWristband(e.target.value)}
+            sx={fieldSx}
+          />
+        ) : (
+          <TextField
+            fullWidth
+            label={`سوار الطفل ${i + 1}`}
+            value={siblingDetails[i - 1]?.wristband || ''}
+            onChange={e =>
+              setSiblingDetails(cur =>
+                cur.map((it, idx) =>
+                  idx === i - 1
+                    ? { ...it, wristband: e.target.value }
+                    : it
+                )
+              )
+            }
+            sx={fieldSx}
+          />
+        )}
+      </Grid>
+    ))}
+  </Grid>
+
+  {companions > 0 && (
+    <>
+      <Divider sx={{ my: 2 }} />
+
+      <Typography fontWeight="bold" sx={{ mb: 1 }}>
+        أساور المرافقين
+      </Typography>
+
+      <Grid container spacing={1}>
+        {Array.from({ length: companions }, (_, i) => (
+          <Grid item xs={12} sm={6} md={3} key={`comp-band-${i}`}>
+            <TextField
+              fullWidth
+              label={`سوار المرافق ${i + 1}`}
+              value={companionBands[i] || ''}
+              onChange={e => setCompanionBand(i, e.target.value)}
+              sx={fieldSx}
+            />
+          </Grid>
+        ))}
+      </Grid>
+    </>
+  )}
+
+</AccordionDetails>
 
           {settings?.flexibleFieldEnabled && (
             <Grid item xs={12}>
