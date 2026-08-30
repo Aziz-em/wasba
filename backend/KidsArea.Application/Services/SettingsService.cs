@@ -19,7 +19,7 @@ public class SettingsService
         var methods = await _db.PaymentMethods.Where(x => !x.IsDeleted).OrderBy(x => x.SortOrder)
             .Select(x => new PaymentMethodDto(x.Id, x.Name, x.Code, x.IsActive, x.SortOrder)).ToListAsync();
                 return new SettingsDto(
-            s.CenterName, s.CenterPhone, s.ClosingTime, s.LogoPath, s.LoginBackgroundPath, s.HomeBackgroundPath, s.IconTheme,
+            s.CenterName, s.CenterPhone, s.ClosingTime, s.LogoPath, s.LoginBackgroundPath, s.HomeBackgroundPath, s.IconTheme, s.UiTheme,
             s.GraceMinutes, s.Price1Hour, s.Price2Hours, s.Price3Hours, s.Price4Hours, s.PriceFullDay, s.ExtraCompanionPrice,
             s.FlexibleFieldEnabled, s.FlexibleFieldLabel, s.FlexibleFieldPrice, s.QrOnReceipt, siblings, methods
         );
@@ -29,7 +29,7 @@ public class SettingsService
     {
         var s = await _db.SystemSettings.FirstAsync(x => x.Id == 1);
         s.CenterName = dto.CenterName; s.CenterPhone = dto.CenterPhone; s.ClosingTime = dto.ClosingTime;
-        s.IconTheme = dto.IconTheme; s.GraceMinutes = dto.GraceMinutes;
+        s.IconTheme = dto.IconTheme; s.UiTheme = dto.UiTheme; s.GraceMinutes = dto.GraceMinutes;
         s.Price1Hour = dto.Price1Hour; s.Price2Hours = dto.Price2Hours;
         s.Price3Hours = dto.Price3Hours;
         s.Price4Hours = dto.Price4Hours;

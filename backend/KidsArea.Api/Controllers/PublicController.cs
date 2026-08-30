@@ -21,7 +21,8 @@ public class PublicController : ControllerBase
             logoPath = s.LogoPath,
             loginBackgroundPath = s.LoginBackgroundPath,
             homeBackgroundPath = s.HomeBackgroundPath,
-            iconTheme = s.IconTheme
+            iconTheme = s.IconTheme,
+            uiTheme = s.UiTheme
         });
         }
 [HttpGet("image")]

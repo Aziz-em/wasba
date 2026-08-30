@@ -130,6 +130,7 @@ public class ShiftService
         AddIndividualLine(individual, visits, DurationPackage.OneHour, "ساعة واحدة");
         AddIndividualLine(individual, visits, DurationPackage.TwoHours, "ساعتان");
         AddIndividualLine(individual, visits, DurationPackage.ThreeHours, "3 ساعات");
+        AddIndividualLine(individual, visits, DurationPackage.FourHours, "4 ساعات");
         AddIndividualLine(individual, visits, DurationPackage.FullDay, "يوم كامل");
 
         var siblingGroups = visits
@@ -139,6 +140,7 @@ public class ShiftService
                 $"أخوة {g.Key.SiblingsCount} × {PkgName(g.Key.Package)}",
                 g.Count(),
                 g.Sum(x => x.PackageAmount)))
+            .Where(x => x.Count > 0)
             .ToList();
 
         var partyLines = parties
@@ -185,6 +187,8 @@ public class ShiftService
         var rows = visits
             .Where(v => v.PricingMode == PricingMode.Individual && v.Package == package && !v.UsedMembership)
             .ToList();
+        // فقط الباقات المستخدمة فعلاً (عدد > 0) — لا تظهر صفوف بمبلغ 0
+        if (rows.Count == 0) return;
         list.Add(new ReportLineDto(label, rows.Count, rows.Sum(r => r.PackageAmount)));
     }
 
@@ -193,6 +197,7 @@ public class ShiftService
         DurationPackage.OneHour => "ساعة",
         DurationPackage.TwoHours => "ساعتان",
         DurationPackage.ThreeHours => "3 ساعات",
+        DurationPackage.FourHours => "4 ساعات",
         DurationPackage.FullDay => "يوم كامل",
         _ => ""
     };

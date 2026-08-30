@@ -50,7 +50,8 @@ public static class SeedData
             FlexibleFieldLabel = "إضافة",
             FlexibleFieldPrice = 0,
             QrOnReceipt = true,
-            IconTheme = "classic"
+            IconTheme = "classic",
+            UiTheme = "classic"
         });
 
         foreach (var count in new[] { 2, 3, 4 })
@@ -83,5 +84,6 @@ public static class SeedData
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN ChildWristband TEXT"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Visits ADD COLUMN CompanionWristbands TEXT"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE SystemSettings ADD COLUMN Price4Hours REAL NOT NULL DEFAULT 0"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE SystemSettings ADD COLUMN UiTheme TEXT NOT NULL DEFAULT 'classic'"); } catch { }
     }
 }

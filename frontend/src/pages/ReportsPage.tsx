@@ -32,9 +32,9 @@ export default function ReportsPage() {
       <tr><td>InstaPay</td><td>${s.instaPayTotal}</td></tr><tr><td>أخرى</td><td>${s.otherTotal}</td></tr>
       <tr><td><b>الإجمالي</b></td><td><b>${s.totalRevenue}</b></td></tr></table></div>
       <div class="sec"><h3>2) باقات فردية</h3><table><tr><th>الباقة</th><th>عدد</th><th>قيمة</th></tr>
-      ${(d.individualPackages || []).map((x: any) => `<tr><td>${x.label}</td><td>${x.count}</td><td>${x.amount}</td></tr>`).join('')}</table></div>
+      ${(d.individualPackages || []).filter((x: any) => (x.count||0)>0 || (x.amount||0)>0).map((x: any) => `<tr><td>${x.label}</td><td>${x.count}</td><td>${x.amount}</td></tr>`).join('')}</table></div>
       <div class="sec"><h3>3) باقات الأخوة</h3><table><tr><th>البيان</th><th>عدد</th><th>قيمة</th></tr>
-      ${(d.siblingPackages || []).map((x: any) => `<tr><td>${x.label}</td><td>${x.count}</td><td>${x.amount}</td></tr>`).join('')}</table></div>
+      ${(d.siblingPackages || []).filter((x: any) => (x.count||0)>0 || (x.amount||0)>0).map((x: any) => `<tr><td>${x.label}</td><td>${x.count}</td><td>${x.amount}</td></tr>`).join('')}</table></div>
       <div class="sec"><h3>4) مرافقين / تجاوز</h3><div>رسوم المرافقين: ${d.companionsTotal} | التجاوز: ${d.overageTotal}</div></div>
       <div class="sec"><h3>5) الحفلات</h3><table>
       ${(d.parties || []).map((x: any) => `<tr><td>${x.label}</td><td>${x.amount}</td></tr>`).join('')}</table></div>

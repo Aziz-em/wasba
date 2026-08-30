@@ -114,7 +114,7 @@ public record PartyDto(
 
 public record SettingsDto(
     string CenterName, string? CenterPhone, string ClosingTime,
-    string? LogoPath, string? LoginBackgroundPath, string? HomeBackgroundPath, string IconTheme,
+    string? LogoPath, string? LoginBackgroundPath, string? HomeBackgroundPath, string IconTheme, string UiTheme,
     int GraceMinutes,
         decimal Price1Hour, decimal Price2Hours, decimal Price3Hours, decimal Price4Hours, decimal PriceFullDay,
     decimal ExtraCompanionPrice,
@@ -126,7 +126,7 @@ public record SettingsDto(
 public record SiblingPriceDto(int SiblingsCount, int DurationPackage, decimal Price);
 public record PaymentMethodDto(int Id, string Name, string Code, bool IsActive, int SortOrder);
 public record UpdateSettingsDto(
-    string CenterName, string? CenterPhone, string ClosingTime, string IconTheme,
+    string CenterName, string? CenterPhone, string ClosingTime, string IconTheme, string UiTheme,
     int GraceMinutes,
         decimal Price1Hour, decimal Price2Hours, decimal Price3Hours, decimal Price4Hours, decimal PriceFullDay,
     decimal ExtraCompanionPrice,

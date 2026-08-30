@@ -8,6 +8,8 @@ import api from '../api/client'
 import { toast } from 'react-toastify'
 import { useAuth } from '../features/auth'
 import { mediaUrl } from '../utils/media'
+import { UI_THEME_OPTIONS } from '../theme/themes'
+import { useAppTheme } from '../theme/AppThemeProvider'
 
 const fieldSx = {
   direction: 'rtl',
@@ -102,6 +104,7 @@ function ImageUpload({ label, type, current, onDone }: { label: string; type: st
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const { setUiTheme, refreshTheme } = useAppTheme()
   const [s, setS] = useState<any>(null)
   const [users, setUsers] = useState<any[]>([])
   const [newUser, setNewUser] = useState({ username: '', displayName: '', password: '', role: 'Cashier' })
@@ -126,6 +129,7 @@ export default function SettingsPage() {
         centerPhone: s.centerPhone,
         closingTime: s.closingTime,
         iconTheme: s.iconTheme,
+        uiTheme: s.uiTheme || 'classic',
         graceMinutes: s.graceMinutes,
         price1Hour: s.price1Hour,
         price2Hours: s.price2Hours,
@@ -139,6 +143,8 @@ export default function SettingsPage() {
         qrOnReceipt: s.qrOnReceipt,
         siblingPrices: s.siblingPrices || []
       })
+      if (s.uiTheme) setUiTheme(s.uiTheme)
+      refreshTheme()
       toast.success('تم حفظ الإعدادات')
     } catch (e: any) {
       toast.error(e.response?.data?.message || 'فشل')
@@ -213,7 +219,7 @@ export default function SettingsPage() {
               <TextField fullWidth label="وقت الإغلاق (HH:mm)" value={s.closingTime}
                 onChange={e => set('closingTime', e.target.value)} sx={fieldSx} />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={6} sm={4}>
               <TextField fullWidth select label="سمة الأيقونات" value={s.iconTheme || 'rainbow'}
                 onChange={e => set('iconTheme', e.target.value)} sx={fieldSx}>
                 <MenuItem value="rainbow">قوس قزح (ألوان صارخة)</MenuItem>
@@ -224,6 +230,15 @@ export default function SettingsPage() {
                 <MenuItem value="pastel">باستيل ناعم</MenuItem>
                 <MenuItem value="darkblock">داكن كتل لونية</MenuItem>
                 <MenuItem value="metro">مترو مسطح</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth select label="ثيم الواجهة" value={s.uiTheme || 'classic'}
+                onChange={e => set('uiTheme', e.target.value)} sx={fieldSx}
+                helperText="ألوان وخط التطبيق بالكامل">
+                {UI_THEME_OPTIONS.map(o => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
               </TextField>
             </Grid>
             <Grid item xs={12} md={4}>
