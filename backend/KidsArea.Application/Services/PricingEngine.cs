@@ -57,9 +57,9 @@ DurationPackage.FullDay => 0,
         return checkIn.AddHours(h);
     }
 
-       /// <summary>
-    /// بعد انتهاء الباقة + السماحية: يُحسب سعر باقة إجمالي الساعات
-    /// (1 / 2 / 3 / يوم كامل) ويُخصم ما دُفع عند الدخول على الباقة فقط.
+         /// <summary>
+    /// السماح يُطبَّق على نهاية الباقة وعلى كسر الساعة في إجمالي المدة.
+    /// مثال: 3س و6د مع سماح 15د → يُحاسب كـ 3 ساعات فقط.
     /// </summary>
     public (int overageHours, decimal amount) CalculateOverage(
         SystemSettings s,
@@ -71,27 +71,42 @@ DurationPackage.FullDay => 0,
             return (0, 0);
 
         var expected = visit.ExpectedCheckOutTime ?? visit.CheckInTime.AddHours(visit.PackageHours);
-        var graceEnd = expected.AddMinutes(s.GraceMinutes);
-        if (checkOutUtc <= graceEnd)
+        var graceMinutes = Math.Max(0, s.GraceMinutes);
+
+        // داخل الباقة + السماح من نهاية الباقة → لا تجاوز
+        if (checkOutUtc <= expected.AddMinutes(graceMinutes))
             return (0, 0);
 
-        var minutesOver = (checkOutUtc - expected).TotalMinutes;
-        var extraHours = (int)Math.Ceiling(minutesOver / 60.0);
-        if (extraHours < 1) extraHours = 1;
+        // إجمالي مدة البقاء من الدخول للخروج
+        var totalMinutes = (checkOutUtc - visit.CheckInTime).TotalMinutes;
+        if (totalMinutes < 0) totalMinutes = 0;
 
-        var totalHours = visit.PackageHours + extraHours;
+        var wholeHours = (int)Math.Floor(totalMinutes / 60.0);
+        var remainderMinutes = totalMinutes - (wholeHours * 60.0);
+
+        // كسر الساعة ≤ السماح → لا نرفع للساعة التالية
+        int billableHours = remainderMinutes <= graceMinutes
+            ? wholeHours
+            : wholeHours + 1;
+
+        if (billableHours < 1) billableHours = 1;
+
+        // لا نحاسب أقل من باقة الدخول
+        if (billableHours <= visit.PackageHours)
+            return (0, 0);
+
+        var extraHours = billableHours - visit.PackageHours;
 
         DurationPackage targetPackage =
-    totalHours <= 1 ? DurationPackage.OneHour :
-    totalHours <= 2 ? DurationPackage.TwoHours :
-    totalHours <= 3 ? DurationPackage.ThreeHours :
-    totalHours <= 4 ? DurationPackage.FourHours :
-    DurationPackage.FullDay;
+            billableHours <= 1 ? DurationPackage.OneHour :
+            billableHours <= 2 ? DurationPackage.TwoHours :
+            billableHours <= 3 ? DurationPackage.ThreeHours :
+            billableHours <= 4 ? DurationPackage.FourHours :
+            DurationPackage.FullDay;
 
         var newPackagePrice = GetPackagePrice(
             s, siblingPrices, visit.PricingMode, visit.SiblingsCount, targetPackage);
 
-        // الفرق عن سعر الباقة المدفوعة عند الدخول فقط (بدون مرافقين/مرن)
         var amount = Math.Max(0, Math.Round(newPackagePrice - visit.PackageAmount, 2));
         return (extraHours, amount);
     }

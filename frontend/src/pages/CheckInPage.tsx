@@ -70,7 +70,7 @@ export default function CheckInPage() {
 
   const total = (() => {
     if (!settings) return 0
-    const packagePrice = packagePriceOf(settings, pkg, 1 + siblings); // أضف 1 للطفل الأساسي
+    const packagePrice = packagePriceOf(settings, pkg, siblings)
     const extraComp = Math.max(0, companions - 2) * (settings.extraCompanionPrice || 0)
     const flex = settings.flexibleFieldEnabled && useFlex ? (settings.flexibleFieldPrice || 0) : 0
     return packagePrice + extraComp + flex
@@ -327,7 +327,7 @@ useEffect(() => {
          <Grid item xs={12}>
   <Grid container spacing={1}>
 <Grid item xs={12}>
-  <Divider sx={{ my: 2 }} />
+  <Divider sx={{ my: 1 }} />
 </Grid>
 
 <Grid item xs={12}>
@@ -500,6 +500,7 @@ useEffect(() => {
       <Divider sx={{ my: 2 }} />
 
       <Typography fontWeight="bold" sx={{ mb: 1 }}>
+        
         أساور المرافقين
       </Typography>
 
