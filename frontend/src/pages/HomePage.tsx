@@ -34,7 +34,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#6a1b9a',     // بنفسجي
       treasury: '#00838f',  // تركواز
       close: '#c62828',     // أحمر
-      reports: '#4527a0'    // نيلي
     }
   },
   neon: {
@@ -42,7 +41,7 @@ const themes: Record<string, ThemeConfig> = {
     paper: '#1e1e1e',
     radius: 12,
     shadow: '0 0 12px rgba(0,255,200,.25)',
-    text: '#111',
+    text: '#0a0a0a',
     btn: {
       checkin: '#00e676',
       active: '#00b0ff',
@@ -50,7 +49,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#e040fb',
       treasury: '#1de9b6',
       close: '#ff1744',
-      reports: '#ff9100'
     }
   },
   kids: {
@@ -66,7 +64,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#ec407a',
       treasury: '#26a69a',
       close: '#e53935',
-      reports: '#7e57c2'
     }
   },
   ocean: {
@@ -82,7 +79,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#ad1457',
       treasury: '#00838f',
       close: '#b71c1c',
-      reports: '#283593'
     }
   },
   contrast: {
@@ -98,7 +94,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#4a148c',
       treasury: '#004d40',
       close: '#b71c1c',
-      reports: '#311b92'
     }
   },
   pastel: {
@@ -114,7 +109,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#f48fb1',
       treasury: '#80cbc4',
       close: '#ef9a9a',
-      reports: '#ce93d8'
     }
   },
   darkblock: {
@@ -130,7 +124,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#d500f9',
       treasury: '#00bfa5',
       close: '#ff1744',
-      reports: '#ffd600'
     }
   },
   metro: {
@@ -146,7 +139,6 @@ const themes: Record<string, ThemeConfig> = {
       party: '#9c27b0',
       treasury: '#009688',
       close: '#f44336',
-      reports: '#3f51b5'
     }
   }
 }
@@ -158,7 +150,6 @@ const icons: Record<string, JSX.Element> = {
   party: <CelebrationIcon sx={{ fontSize: 28, mb: 0.5 }} />,
   treasury: <AccountBalanceWalletIcon sx={{ fontSize: 28, mb: 0.5 }} />,
   close: <LockIcon sx={{ fontSize: 28, mb: 0.5 }} />,
-  reports: <AssessmentIcon sx={{ fontSize: 28, mb: 0.5 }} />
 }
 
 export default function HomePage() {
@@ -240,7 +231,6 @@ export default function HomePage() {
           {btn('حفلة', '/party', 'party')}
           {btn('الخزنة', '/treasury', 'treasury')}
           {btn('غلق الوردية', '/close-shift', 'close')}
-          {btn('التقارير', '/reports', 'reports')}
         </Grid>
       </Box>
     </Box>
