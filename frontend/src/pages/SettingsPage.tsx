@@ -129,7 +129,7 @@ export default function SettingsPage() {
         centerPhone: s.centerPhone,
         closingTime: s.closingTime,
         iconTheme: s.iconTheme,
-        uiTheme: s.uiTheme || 'classic',
+        uiTheme: s.uiTheme === 'dark' ? 'dark' : 'light',
         graceMinutes: s.graceMinutes,
         price1Hour: s.price1Hour,
         price2Hours: s.price2Hours,
@@ -233,9 +233,9 @@ export default function SettingsPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField fullWidth select label="ثيم الواجهة" value={s.uiTheme || 'classic'}
+              <TextField fullWidth select label="ثيم الواجهة" value={(s.uiTheme === 'dark' ? 'dark' : 'light')}
                 onChange={e => set('uiTheme', e.target.value)} sx={fieldSx}
-                helperText="ألوان وخط التطبيق بالكامل">
+                helperText="وضع فاتح كامل أو داكن كامل للتطبيق">
                 {UI_THEME_OPTIONS.map(o => (
                   <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
                 ))}

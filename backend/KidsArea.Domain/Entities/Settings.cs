@@ -10,7 +10,7 @@ public class SystemSettings : BaseEntity
     public string? LoginBackgroundPath { get; set; }
     public string? HomeBackgroundPath { get; set; }
     public string IconTheme { get; set; } = "classic"; // classic | colorful | simple
-    public string UiTheme { get; set; } = "classic"; // classic | teal | ocean | kids | sunset | dark
+    public string UiTheme { get; set; } = "light"; // light | dark
     public string Currency { get; set; } = "ج.م";
     public int GraceMinutes { get; set; } = 15;
 
